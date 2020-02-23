@@ -34,23 +34,24 @@ void *mqtt_publish_thread(void *arg)
     
     msg.qos = 2;
     msg.payload = (void *) buf;
-    // msg.payloadlen = strlen(buf);
+
     while(1) {
         sprintf(buf, "welcome to mqttclient, this is a publish test, a rand number: %d ...", random_number());
-        mqtt_publish(&client, "testtopic1-acer3", &msg);
-        mqtt_publish(&client, "testtopic2-acer3", &msg);
-        mqtt_publish(&client, "testtopic3-acer3", &msg);
-        mqtt_publish(&client, "testtopic4-acer3", &msg);
+        mqtt_publish(&client, "rtt-topic1", &msg);
+        mqtt_publish(&client, "rtt-topic2", &msg);
         sleep(4);
     }
 }
 
 int main(void)
 {
-    int res;
-    // pthread_t thread1;
-    pthread_t thread2;
-    
+    char buf[100] = { 0 };
+    mqtt_message_t msg;
+    memset(&msg, 0, sizeof(msg));
+
+    msg.qos = QOS0;
+    msg.payload = (void *) buf;
+
     printf("\nwelcome to mqttclient test...\n");
 
     log_init();
@@ -69,21 +70,15 @@ int main(void)
 
     mqtt_connect(&client);
     
-    mqtt_subscribe(&client, "testtopic1-acer3", QOS0, topic_test1_handler);
-    mqtt_subscribe(&client, "testtopic2-acer3", QOS2, NULL);
-    mqtt_subscribe(&client, "testtopic3-acer3", QOS2, NULL);
-    mqtt_subscribe(&client, "testtopic4-acer3", QOS2, NULL);
-    mqtt_subscribe(&client, "testtopic5-acer3", QOS1, NULL);
-    mqtt_subscribe(&client, "testtopic6-acer3", QOS2, NULL);
-    mqtt_subscribe(&client, "testtopic7-acer3", QOS0, NULL);
+    mqtt_subscribe(&client, "rtt-topic1", QOS0, topic_test1_handler);
+    mqtt_subscribe(&client, "rtt-topic2", QOS0, NULL);
     
-    res = pthread_create(&thread2, NULL, mqtt_publish_thread, NULL);
-    if(res != 0) {
-        LOG_E("create mqtt publish thread fail");
-        exit(res);
-    }
-
     while (1) {
-        sleep(100);
+
+        sprintf(buf, "welcome to mqttclient, this is a publish test, a rand number: %d ...", random_number());
+
+        mqtt_publish(&client, "test", &msg);
+
+        rt_thread_mdelay(2000);
     }
 }
