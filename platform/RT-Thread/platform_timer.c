@@ -55,15 +55,5 @@ unsigned long platform_timer_now(void)
 
 void platform_timer_usleep(unsigned long usec)
 {
-    uint32_t ms;
-    rt_tick_t tick;
-
-    ms = usec / 1000;
-    if (ms == 0) {
-        ms = 1;
-    }
-
-    tick = tos_millisec2tick(ms);
-
-    tos_sleep_ms(tick);
+    rt_thread_mdelay(usec);
 }

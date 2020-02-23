@@ -10,7 +10,7 @@
 
 #include "mqtt_config.h"
 
-#if MQTT_NETWORK_TYPE_TLS
+#ifdef MQTT_NETWORK_TYPE_TLS
 typedef struct network_ssl_params {
     const char		            *ca_crt;
     size_t 		                ca_crt_len;
@@ -31,7 +31,7 @@ typedef struct network_ssl_params {
 typedef struct network_params {
     char                        *addr;
     char                        *port;
-#if MQTT_NETWORK_TYPE_TLS
+#ifdef MQTT_NETWORK_TYPE_TLS
     network_ssl_params_t        network_ssl_params;
     void                        *nettype_tls_params;
 #endif /* MQTT_NETWORK_TYPE_TLS */

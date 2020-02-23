@@ -22,10 +22,10 @@ path += [cwd + '/platform/RT-Thread']
 
 if GetDepend(['LOG_IS_SALOF']):
     src += Glob('common/log/*.c')
-    src += Glob('common/log/arch/*.c')
+    src += Glob('common/log/arch/rt-thread/*.c')
     path += [cwd + '/common/log']
     group = DefineGroup('mqttclient/log', Glob('common/log/*.c'), depend = ['PKG_USING_MQTTCLIENT'])
-    group = DefineGroup('mqttclient/log', Glob('common/log/arch/*.c'), depend = ['PKG_USING_MQTTCLIENT'])
+    group = DefineGroup('mqttclient/log', Glob('common/log/arch/rt-thread/*.c'), depend = ['PKG_USING_MQTTCLIENT'])
 
 if GetDepend(['MQTT_NETWORK_TYPE_TLS']):
     src += Glob('common/mbedtls/library/*.c')

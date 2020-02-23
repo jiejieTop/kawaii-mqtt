@@ -8,13 +8,13 @@
 #include "platform_timer.h"
 #include "platform_nettype_tcp.h"
 
-#if MQTT_NETWORK_TYPE_TLS
+#ifdef MQTT_NETWORK_TYPE_TLS
 #include "platform_nettype_tls.h"
 #endif
 
 int network_read(network_t *n, unsigned char *buf, int len, int timeout)
 {
-#if MQTT_NETWORK_TYPE_TLS
+#ifdef MQTT_NETWORK_TYPE_TLS
 	return platform_nettype_tls_read(n, buf, len, timeout);
 #else
 	return platform_nettype_tcp_read(n, buf, len, timeout);
@@ -23,7 +23,7 @@ int network_read(network_t *n, unsigned char *buf, int len, int timeout)
 
 int network_write(network_t *n, unsigned char *buf, int len, int timeout)
 {
-#if MQTT_NETWORK_TYPE_TLS
+#ifdef MQTT_NETWORK_TYPE_TLS
 	return platform_nettype_tls_write(n, buf, len, timeout);
 #else
 	return platform_nettype_tcp_write(n, buf, len, timeout);
@@ -32,7 +32,7 @@ int network_write(network_t *n, unsigned char *buf, int len, int timeout)
 
 int network_connect(network_t *n)
 {
-#if MQTT_NETWORK_TYPE_TLS
+#ifdef MQTT_NETWORK_TYPE_TLS
 	return platform_nettype_tls_connect(n);
 #else
 	return platform_nettype_tcp_connect(n);
@@ -41,7 +41,7 @@ int network_connect(network_t *n)
 
 void network_disconnect(network_t *n)
 {
-#if MQTT_NETWORK_TYPE_TLS
+#ifdef MQTT_NETWORK_TYPE_TLS
 	platform_nettype_tls_disconnect(n);
 #else
 	platform_nettype_tcp_disconnect(n);
@@ -61,7 +61,7 @@ int network_init(network_t* n, network_params_t* network_params)
 	n->network_params.addr = network_params->addr;
 	n->network_params.port = network_params->port;
 
-#if MQTT_NETWORK_TYPE_TLS
+#ifdef MQTT_NETWORK_TYPE_TLS
 	n->network_params.network_ssl_params.ca_crt = network_params->network_ssl_params.ca_crt;
 	n->network_params.network_ssl_params.ca_crt_len = strlen(n->network_params.network_ssl_params.ca_crt);
 #if defined(MBEDTLS_FS_IO)

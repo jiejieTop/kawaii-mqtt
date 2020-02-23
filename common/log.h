@@ -8,11 +8,9 @@
 #ifndef _LOG_H_
 #define _LOG_H_
 
-#define LOG_IS_SALOF    1
+#include <rtconfig.h>
 
-#define LOG_LEVEL       DEBUG_LEVEL         //WARN_LEVEL DEBUG_LEVEL INFO_LEVEL
-
-#if LOG_IS_SALOF
+#ifdef LOG_IS_SALOF
     #include "salof.h"
 
     #define LOG_D(fmt, ...)   LOG_DEBUG(fmt, ##__VA_ARGS__)
@@ -24,6 +22,10 @@
     #include <stdio.h>
     #include <rtthread.h>
     #include <rtdevice.h>
+    
+#ifndef LOG_LEVEL
+    #define LOG_LEVEL   DEBUG_LEVEL
+#endif 
 
     #define BASE_LEVEL      (0)
     #define ASSERT_LEVEL    (BASE_LEVEL + 1)

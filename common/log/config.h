@@ -19,10 +19,6 @@
 #define         SALOF_OS                    USE_RTT
 #define         USE_IDLE_HOOK               (0U)
 
-# ifndef LOG_LEVEL
-#define         LOG_LEVEL                   DEBUG_LEVEL   //WARN_LEVEL DEBUG_LEVEL
-#endif
-
 #define         LOG_COLOR                   (0U)
 #define         LOG_TS                      (0U)
 #define         LOG_TAR                     (0U)

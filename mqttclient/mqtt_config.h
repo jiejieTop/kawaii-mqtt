@@ -8,9 +8,6 @@
 #ifndef _MQTT_CONFIG_H_
 #define _MQTT_CONFIG_H_
 
-#define     MQTT_NO                             0
-#define     MQTT_YES                            1
-
 #define     MQTT_MAX_PACKET_ID                  (0xFFFF - 1)
 #define     MQTT_TOPIC_LEN_MAX                  64
 #define     MQTT_ACK_HANDLER_NUM_MAX            64
@@ -26,9 +23,7 @@
 #define     MQTT_THREAD_TICK                    50
 
 
-#define     MQTT_NETWORK_TYPE_TLS               MQTT_NO
-
-#if MQTT_NETWORK_TYPE_TLS
+#ifdef MQTT_NETWORK_TYPE_TLS
 
     #define MQTT_TLS_HANDSHAKE_TIMEOUT  (5 * 1000)
 
