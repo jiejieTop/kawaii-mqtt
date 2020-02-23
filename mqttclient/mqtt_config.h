@@ -2,11 +2,13 @@
  * @Author: jiejie
  * @Github: https://github.com/jiejieTop
  * @Date: 2019-12-15 00:42:16
- * @LastEditTime: 2020-02-23 23:50:03
+ * @LastEditTime: 2020-02-24 00:00:29
  * @Description: the code belongs to jiejie, please keep the author information and source code according to the license.
  */
 #ifndef _MQTT_CONFIG_H_
 #define _MQTT_CONFIG_H_
+
+#include <rtconfig.h>
 
 #ifndef MQTT_MAX_PACKET_ID
     #define     MQTT_MAX_PACKET_ID                  (0xFFFF - 1)

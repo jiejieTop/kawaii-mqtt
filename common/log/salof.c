@@ -46,7 +46,7 @@ int salof_init(void)
         return -1;
 
 #if !USE_IDLE_HOOK
-    _salof_task = salof_task_create("salof_task", salof_task, NULL, SALOF_TASK_STACK_SIZE, SALOF_TASK_PRIO, SALOF_TASK_TICK);
+    _salof_task = salof_task_create("salof_task", salof_task, NULL, SALOF_THREAD_STACK_SIZE, SALOF_TASK_PRIO, SALOF_THREAD_TICK);
     if(_salof_task == NULL)
         return -1;
 #endif
