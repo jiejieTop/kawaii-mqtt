@@ -29,15 +29,15 @@ group = DefineGroup('mqttclient/platform', Glob('platform/RT-Thread/*.c'), depen
 if GetDepend(['LOG_IS_SALOF']):
     src += Glob('common/log/*.c')
     src += Glob('common/log/arch/*.c')
-    path = [cwd + '/common/log']
+    path += [cwd + '/common/log']
     group = DefineGroup('mqttclient/log', Glob('common/log/*.c'), depend = ['PKG_USING_MQTTCLIENT'], CPPPATH = path)
     group = DefineGroup('mqttclient/log', Glob('common/log/arch/*.c'), depend = ['PKG_USING_MQTTCLIENT'], CPPPATH = path)
 
 if GetDepend(['MQTT_NETWORK_TYPE_TLS']):
     src += Glob('common/mbedtls/library/*.c')
     src += Glob('common/mbedtls/wrapper/*.c')
-    path = [cwd + '/common/mbedtls/include']
-    path = [cwd + '/common/mbedtls/include/mbedtls']
+    path += [cwd + '/common/mbedtls/include']
+    path += [cwd + '/common/mbedtls/include/mbedtls']
     group = DefineGroup('mbedtls/library', Glob('common/mbedtls/library/*.c'), depend = ['PKG_USING_MQTTCLIENT'], CPPPATH = path)
     group = DefineGroup('mbedtls/wrapper', Glob('common/mbedtls/wrapper/*.c'), depend = ['PKG_USING_MQTTCLIENT'], CPPPATH = path)
 
