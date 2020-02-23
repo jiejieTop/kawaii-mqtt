@@ -2,7 +2,7 @@
  * @Author: jiejie
  * @Github: https://github.com/jiejieTop
  * @Date: 2019-12-25 23:56:34
- * @LastEditTime: 2020-02-24 00:13:34
+ * @LastEditTime: 2020-02-24 01:05:11
  * @Description: the code belongs to jiejie, please keep the author information and source code according to the license.
  */
 #ifndef _SALOF_CONFIG_H_
@@ -17,7 +17,6 @@
 #define salof_sem       rt_sem_t
 #define salof_tcb       rt_thread_t
 #define SALOF_TASK_PRIO (RT_THREAD_PRIORITY_MAX - 1)
-#undef  USE_IDLE_HOOK
     
 
 void *salof_alloc(unsigned int size);

@@ -2,7 +2,7 @@
  * @Author: jiejie
  * @Github: https://github.com/jiejieTop
  * @Date: 2019-12-27 23:10:36
- * @LastEditTime: 2020-02-24 00:48:58
+ * @LastEditTime: 2020-02-24 01:05:54
  * @Description: the code belongs to jiejie, please keep the author information and source code according to the license.
  */
 /** synchronous asynchronous log output framework */
@@ -17,6 +17,7 @@
 #endif 
 
 static int salof_out(char *buf, int len);
+void salof_handler( void );
 
 #ifdef USE_SALOF
 #include <string.h>
@@ -49,6 +50,8 @@ int salof_init(void)
     _salof_task = salof_task_create("salof_task", salof_task, NULL, SALOF_THREAD_STACK_SIZE, SALOF_TASK_PRIO, SALOF_THREAD_TICK);
     if(_salof_task == NULL)
         return -1;
+#else
+    rt_thread_idle_sethook(salof_handler);
 #endif
 #endif
     return 0;
