@@ -12,7 +12,8 @@ src += Glob('network/*.c')
 src += Glob('platform/RT-Thread/*.c')
 
 if GetDepend(['PKG_USING_MQTTCLIENT_TEST']):
-    src += Glob('tests/*.c')
+    src += Glob('test/*.c')
+    group = DefineGroup('mqttclient/test', Glob('test/*.c'), depend = ['PKG_USING_MQTTCLIENT'])
 
 path = [cwd + '/common']
 path += [cwd + '/mqtt']
