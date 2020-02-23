@@ -2,7 +2,7 @@
  * @Author: jiejie
  * @Github: https://github.com/jiejieTop
  * @Date: 2019-12-11 21:53:07
- * @LastEditTime: 2020-02-24 01:33:07
+ * @LastEditTime: 2020-02-24 01:36:06
  * @Description: the code belongs to jiejie, please keep the author information and source code according to the license.
  */
 #include <rtthread.h>
@@ -62,3 +62,4 @@ int main(void)
         rt_thread_mdelay(2000);
     }
 }
+
