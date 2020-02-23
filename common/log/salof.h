@@ -4,6 +4,7 @@
 #include "format.h"
 #include "fifo.h"
 #include <stdio.h>
+#include <rtconfig.h>
 
 int salof_init(void);
 void salof(const char *fmt, ...);
@@ -18,13 +19,13 @@ void salof(const char *fmt, ...);
 #define     FC_DARK     36
 #define     FC_WHITE    37
 
-// #if USE_LOG
+#ifdef USE_LOG
 
-#if USE_SALOF
+#ifdef USE_SALOF
     #define     PRINT_LOG       salof
 #else
-#if ((!USE_SALOF)&&(!PRINT_LOG))
-    #define         PRINT_LOG                       printf
+#if ((! defined USE_SALOF) && (! defined PRINT_LOG))
+    #define         PRINT_LOG   rt_kprintf
 #endif
 
 #ifndef PRINT_LOG
@@ -32,11 +33,7 @@ void salof(const char *fmt, ...);
 #endif
 #endif
 
-#if LOG_TS || LOG_TAR
-
-#endif
-
-#if LOG_COLOR
+#ifdef LOG_COLOR
     #define LOG_START(l, c)     PRINT_LOG("\033\n["#c"m["#l"] >> ")
     #define LOG_END             PRINT_LOG("\033[0m")  
 #else
@@ -44,16 +41,15 @@ void salof(const char *fmt, ...);
     #define LOG_END       
 #endif
 
-#if LOG_TS && LOG_TAR
+#if ((defined LOG_TS) && (defined LOG_TAR))
     #define LOG_T           PRINT_LOG("[TS: %d] [TAR: %s] ",salof_get_tick(), salof_get_task_name())
-#elif LOG_TS
+#elif (defined LOG_TS)
     #define LOG_T           PRINT_LOG("[TS: %d] ", salof_get_tick())
-#elif LOG_TAR
+#elif (defined LOG_TAR)
     #define LOG_T           PRINT_LOG("[TAR: %s] ", salof_get_task_name())
 #else
     #define LOG_T
 #endif
-
 
 #define LOG_LINE(l, c, fmt, ...)        \
     do {                                \

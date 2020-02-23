@@ -2,7 +2,7 @@
  * @Author: jiejie
  * @Github: https://github.com/jiejieTop
  * @Date: 2019-12-27 23:10:36
- * @LastEditTime : 2020-01-16 00:37:56
+ * @LastEditTime: 2020-02-24 00:48:58
  * @Description: the code belongs to jiejie, please keep the author information and source code according to the license.
  */
 /** synchronous asynchronous log output framework */
@@ -18,7 +18,7 @@
 
 static int salof_out(char *buf, int len);
 
-#if USE_SALOF
+#ifdef USE_SALOF
 #include <string.h>
 static fifo_t _salof_fifo = NULL;
 static int _len;
@@ -40,7 +40,7 @@ static char _format_buff[SALOF_BUFF_SIZE];
 
 int salof_init(void)
 {
-#if USE_SALOF
+#ifdef USE_SALOF
     _salof_fifo = fifo_create(SALOF_FIFO_SIZE);
     if(_salof_fifo == NULL)
         return -1;
@@ -66,7 +66,7 @@ void salof(const char *fmt, ...)
     if(len > SALOF_BUFF_SIZE)
         len = SALOF_BUFF_SIZE - 1;
 
-#if USE_SALOF
+#ifdef USE_SALOF
     fifo_write(_salof_fifo, _format_buff, len, 100);
 #else
     salof_out(_format_buff, len);
@@ -80,7 +80,7 @@ static int salof_out(char *buf, int len)
     return send_buff(buf, len);
 }
 
-#if USE_SALOF
+#ifdef USE_SALOF
 void salof_handler( void )
 {
     _len = fifo_read(_salof_fifo, _out_buff, sizeof(_out_buff), 0);
@@ -97,7 +97,7 @@ void salof_task(void *parm)
     (void)parm;
     while(1)
     {
-#if USE_SALOF
+#ifdef USE_SALOF
         salof_handler();
 #endif
     } 
