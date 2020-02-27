@@ -10,8 +10,6 @@
 #include <board.h>
 #include "mqttclient.h"
 
-//extern const char *test_ca_get();
-
 mqtt_client_t client;
 client_init_params_t init_params;
 
@@ -36,9 +34,12 @@ int main(void)
 
     log_init();
 
+    rt_thread_delay(6000);
+    
     init_params.read_buf_size = 1024;
     init_params.write_buf_size = 1024;
 #ifdef MQTT_NETWORK_TYPE_TLS
+    extern const char *test_ca_get();
     init_params.connect_params.network_params.network_ssl_params.ca_crt = test_ca_get();
     init_params.connect_params.network_params.port = "8883";
 #else
@@ -62,9 +63,13 @@ int main(void)
 
         sprintf(buf, "welcome to mqttclient, this is a publish test, a rand number: %d ...", random_number());
 
-        mqtt_publish(&client, "test", &msg);
+        mqtt_publish(&client, "rtt-topic1", &msg);
+        
+        rt_thread_mdelay(1000);
+        
+        mqtt_publish(&client, "rtt-topic1", &msg);
 
-        rt_thread_mdelay(2000);
+        rt_thread_mdelay(1000);
     }
 }
 
