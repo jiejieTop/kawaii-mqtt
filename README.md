@@ -7,8 +7,8 @@
 ## 优势：
 - **基于标准BSD socket之上开发**，只要是兼容BSD socket的系统均可使用。
 - **稳定**：无论是`掉线重连`，`丢包重发`，都是严格`遵循MQTT协议标准`执行，除此之外对**大数据量**的测试无论是收是发，都是非常稳定（一次发送`135K`数据，3秒一次），高频测试也是非常稳定（7个主题同时收发，每秒一次，也就是1秒14个mqtt报文，服务质量QoS0、QoS1、QoS2都有）。因为作者以极少的资源设计了`记录机制`，对采用QoS1服务质量的报文必须保证到达一次，对QoS2服务质量的报文有且只有收到一次（如果不相信它稳定性的同学可以自己去修改源码，专门为QoS2服务质量去测试，故意不回复`PUBREC`，让服务器重发QoS2报文，看看客户端是否有且只有处理一次），而对于掉线重连的稳定性，则是**基本操作**了，没啥好说的，因此在测试中稳定性极好。
-- **轻量级**：整个代码工程极其简单，不使用mbedtls情况下，占用资源极少，作者曾使用esp8266模组与云端通信，整个工程代码消耗的RAM不足15k（包括系统占用的开销，对数据的处理开销，而此次还是未优化的情况下）。
-- **无缝衔接mbedtls加密传输**。
+- **轻量级**：整个代码工程极其简单，不使用mbedtls情况下，占用资源极少，作者曾使用esp8266模组与云端通信，整个工程代码消耗的RAM不足15k（包括系统占用的开销，对数据的处理开销，而此次还是未优化的情况下，还依旧完美保留了掉线重连的稳定性，但是对应qos1 qos2服务质量的报文则未做测试，因为STM32F103C8T6芯片资源实在是太少了，折腾不起）。
+- **无缝衔接mbedtls加密传输**，让网络传输更加安全。
 - **拥有极简的API接口**，随意配置，使用起来非常简单。
 - **有非常好的代码风格与思想**：整个代码采用分层式设计，代码实现采用异步处理的思想，降低耦合，提高性能。
 - **MQTT协议支持主题通配符`“#”、“+”`**。
@@ -93,7 +93,7 @@ typedef struct mqtt_client {
 	mqtt_connect(&client);
 ```
 ## 订阅报文
-参数只有 `mqtt_client_t` 类型的指针，字符串类型的`主题`（支持通配符），主题的`服务质量`，以及收到报文的`处理函数`，如不指定则有默认处理函数。
+参数只有 `mqtt_client_t` 类型的指针，字符串类型的`主题`（支持通配符"#" "+"），主题的`服务质量`，以及收到报文的`处理函数`，如不指定则有默认处理函数。
 ```c
     mqtt_subscribe(&client, "testtopic0", QOS0, topic_test1_handler);
     mqtt_subscribe(&client, "testtopic1", QOS1, NULL);
@@ -229,7 +229,7 @@ Location:
 
 ![添加软件包](png/rtt_studio.png)
 
-**注意：**如果遇到添加软件包失败的话，很可能是因为RT-Thread Studio中的软件包还没更新或者更新失败，那么可以到软件安装目录`RT-ThreadStudio\platform\env_released\env\packages\packages`下手动更新软件包，然后将master重置到最新的分支就行了：
+**注意**：如果遇到添加软件包失败的话，很可能是因为RT-Thread Studio中的软件包还没更新或者更新失败，那么可以到软件安装目录`RT-ThreadStudio\platform\env_released\env\packages\packages`下手动更新软件包，然后将master重置到最新的分支就行了：
 
 ![手动更新软件包](png/update.png)
 
@@ -237,12 +237,14 @@ Location:
 
 以下是整个框架的实现方式，方便大家更容易理解mqttclient的代码与设计思想，让大家能够修改源码与使用，还可以提交pr或者issues，开源的世界期待各位大神的参与，感谢！
 
+除此之外以下代码的`记录机制`与其`超时处理机制`是非常好的编程思想，大家有兴趣一定要看源代码！
+
 ### 连接服务器
 ```c
 int mqtt_connect(mqtt_client_t* c);
 ```
 连接服务器则是使用非异步的方式设计，因为必须等待连接上服务器才能进行下一步操作。
-过程如下
+过程如下：
 1. 调用底层的连接函数连接上服务器：
 ```c
 c->network->connect(c->network);
@@ -257,10 +259,22 @@ mqtt_send_packet(c, len, &connect_timer)
 ```c
 mqtt_wait_packet(c, CONNACK, &connect_timer)
 ```
-4. 连接成功后创建一个内部线程`mqtt_yield_thread`
+4. 连接成功后创建一个内部线程`mqtt_yield_thread`，并在合适的时候启动它：
 
 ```c
 platform_thread_init("mqtt_yield_thread", mqtt_yield_thread, c, MQTT_THREAD_STACK_SIZE, MQTT_THREAD_PRIO, MQTT_THREAD_TICK)
+
+if (NULL != c->thread) {
+    mqtt_set_client_state(c, CLIENT_STATE_CONNECTED);
+    platform_thread_startup(c->thread);
+    platform_thread_start(c->thread);       /* start run mqtt thread */
+}
+```
+
+5. 而对于重连来说则不会重新创建线程，直接改变客户端状态为连接状态即可:
+
+```c
+mqtt_set_client_state(c, CLIENT_STATE_CONNECTED);
 ```
 
 ### 订阅报文
@@ -278,13 +292,27 @@ mqtt_send_packet(c, len, &timer)
 ```c
 mqtt_msg_handler_create(topic_filter, qos, handler)
 ```
-3. 在发送了报文给服务器那就要等待服务器的响应了，记录这个等待`SUBACK`
+3. 在发送了报文给服务器那就要等待服务器的响应了，先记录这个等待`SUBACK`
 ```c
 mqtt_ack_list_record(c, SUBACK, mqtt_get_next_packet_id(c), len, msg_handler)
 ```
 
 ### 取消订阅
 与订阅报文的逻辑基本差不多的~
+
+1. 序列化订阅报文并且发送给服务器
+```c
+MQTTSerialize_unsubscribe(c->write_buf, c->write_buf_size, 0, packet_id, 1, &topic)
+mqtt_send_packet(c, len, &timer)
+```
+2. 创建对应的消息处理节点，这个消息节点在收到服务器的`UNSUBACK`取消订阅应答报文后将消息处理列表`msg_handler_list`上的已经订阅的主题消息节点销毁
+```c
+mqtt_msg_handler_create((const char*)topic_filter, QOS0, NULL)
+```
+3. 在发送了报文给服务器那就要等待服务器的响应了，先记录这个等待`UNSUBACK`
+```c
+mqtt_ack_list_record(c, UNSUBACK, packet_id, len, msg_handler)
+```
 
 ### 发布报文
 ```c
@@ -304,6 +332,10 @@ mqtt_send_packet(c, len, &timer)
     } else if (QOS2 == msg->qos) {
         rc = mqtt_ack_list_record(c, PUBREC, mqtt_get_next_packet_id(c), len, NULL);
     }
+```
+3. 还有非常重要的一点，重发报文的MQTT报文头部需要设置DUP标志位，这是MQTT协议的标准，因此，在重发的时候作者直接操作了报文的DUP标志位，因为修改DUP标志位的函数我没有从MQTT库中找到，所以我封装了一个函数，这与LwIP中的交叉存取思想是一个道理，它假设我知道MQTT报文的所有操作，所以我可以操作它，这样子可以提高很多效率：
+```c
+mqtt_set_publish_dup(c,1);  /* may resend this data, set the udp flag in advance */
 ```
 
 ### 内部线程
@@ -357,9 +389,25 @@ static int mqtt_packet_handle(mqtt_client_t* c, platform_timer_t* timer)
             goto exit;
     }
 ```
+
 并且做保活的处理：
 ```c
 mqtt_keep_alive(c)
+```
+当发生超时后，
+```c
+if (platform_timer_is_expired(&c->last_sent) || platform_timer_is_expired(&c->last_received)) 
+```
+
+序列号一个心跳包并且发送给服务器
+```c
+MQTTSerialize_pingreq(c->write_buf, c->write_buf_size);
+mqtt_send_packet(c, len, &timer);
+```
+
+当再次发生超时后，表示与服务器的连接已断开，需要重连的操作，设置客户端状态为断开连接
+```c
+mqtt_set_client_state(c, CLIENT_STATE_DISCONNECTED);
 ```
 
 2. `ack`链表的扫描，当收到服务器的报文时，对ack列表进行扫描操作
@@ -384,7 +432,9 @@ mqtt_try_reconnect(c);
 ```c
 mqtt_try_resubscribe(c)
 ```
+
 ### 发布应答与发布完成报文的处理
+
 ```c
 static int mqtt_puback_and_pubcomp_packet_handle(mqtt_client_t *c, platform_timer_t *timer)
 ```
@@ -396,7 +446,9 @@ MQTTDeserialize_ack(&packet_type, &dup, &packet_id, c->read_buf, c->read_buf_siz
 ```c
 mqtt_ack_list_unrecord(c, packet_type, packet_id, NULL);
 ```
+
 ### 订阅应答报文的处理
+
 ```c
 static int mqtt_suback_packet_handle(mqtt_client_t *c, platform_timer_t *timer)
 ```
@@ -412,7 +464,10 @@ mqtt_ack_list_unrecord(c, packet_type, packet_id, NULL);
 ```c
 mqtt_msg_handlers_install(c, msg_handler);
 ```
+
+
 ### 取消订阅应答报文的处理
+
 ```c
 static int mqtt_unsuback_packet_handle(mqtt_client_t *c, platform_timer_t *timer)
 ```
@@ -420,15 +475,17 @@ static int mqtt_unsuback_packet_handle(mqtt_client_t *c, platform_timer_t *timer
 ```c
 MQTTDeserialize_unsuback(&packet_id, c->read_buf, c->read_buf_size)
 ```
-2. 取消对应的ack记录
+2. 取消对应的ack记录，并且获取到已经订阅的消息处理节点
 ```c
 mqtt_ack_list_unrecord(c, UNSUBACK, packet_id, &msg_handler)
 ```
 3. 销毁对应的订阅消息处理函数
 ```c
 mqtt_msg_handler_destory(msg_handler);
+
 ```
 ### 来自服务器的发布报文的处理
+
 ```c
 static int mqtt_publish_packet_handle(mqtt_client_t *c, platform_timer_t *timer)
 ```
@@ -454,6 +511,7 @@ mqtt_deliver_message(c, &topic_name, &msg);
 > 说明：一旦注册到ack列表上的报文，当具有重复的报文是不会重新被注册的，它会通过`mqtt_ack_list_node_is_exist`函数判断这个节点是否存在，主要是依赖等待响应的消息类型与msgid。
 
 ### 发布收到与发布释放报文的处理
+
 ```c
 static int mqtt_pubrec_and_pubrel_packet_handle(mqtt_client_t *c, platform_timer_t *timer)
 ```
