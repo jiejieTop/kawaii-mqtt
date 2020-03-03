@@ -2,7 +2,7 @@
  * @Author: jiejie
  * @Github: https://github.com/jiejieTop
  * @Date: 2019-12-09 21:31:25
- * @LastEditTime: 2020-02-26 22:08:16
+ * @LastEditTime: 2020-02-26 21:34:03
  * @Description: the code belongs to jiejie, please keep the author information and source code according to the license.
  */
 #include "mqttclient.h"
@@ -50,7 +50,7 @@ static int mqtt_set_publish_dup(mqtt_client_t* c, unsigned char dup)
 
 static int mqtt_ack_handler_is_maximum(mqtt_client_t* c)
 {
-    return (c->ack_handler_number >= MQTT_ACK_HANDLER_NUM_MAX) ? 1 : 0;
+    return (c->ack_handler_number >= KAWAII_MQTT_ACK_HANDLER_NUM_MAX) ? 1 : 0;
 }
 
 static void mqtt_add_ack_handler_num(mqtt_client_t* c)
@@ -78,7 +78,7 @@ exit:
 static unsigned short mqtt_get_next_packet_id(mqtt_client_t *c) 
 {
     platform_mutex_lock(&c->global_lock);
-    c->packet_id = (c->packet_id == MQTT_MAX_PACKET_ID) ? 1 : c->packet_id + 1;
+    c->packet_id = (c->packet_id == KAWAII_MQTT_MAX_PACKET_ID) ? 1 : c->packet_id + 1;
     platform_mutex_unlock(&c->global_lock);
     return c->packet_id;
 }
@@ -247,7 +247,7 @@ static char mqtt_topic_is_matched(char* topic_filter, MQTTString* topic_name)
 static void mqtt_new_message_data(message_data_t* md, MQTTString* topic_name, mqtt_message_t* message)
 {
     int len;
-    len = (topic_name->lenstring.len < MQTT_TOPIC_LEN_MAX - 1) ? topic_name->lenstring.len : MQTT_TOPIC_LEN_MAX - 1;
+    len = (topic_name->lenstring.len < KAWAII_MQTT_TOPIC_LEN_MAX - 1) ? topic_name->lenstring.len : KAWAII_MQTT_TOPIC_LEN_MAX - 1;
     memcpy(md->topic_name, topic_name->lenstring.data, len);
     md->topic_name[len] = '\0';     /* the topic name is too long and will be truncated */
     md->message = message;
@@ -894,7 +894,7 @@ exit:
         if(NULL == c->thread) {
 
             /* connect success, and need init mqtt thread */
-            c->thread= platform_thread_init("mqtt_yield_thread", mqtt_yield_thread, c, MQTT_THREAD_STACK_SIZE, MQTT_THREAD_PRIO, MQTT_THREAD_TICK);
+            c->thread= platform_thread_init("mqtt_yield_thread", mqtt_yield_thread, c, KAWAII_MQTT_THREAD_STACK_SIZE, KAWAII_MQTT_THREAD_PRIO, KAWAII_MQTT_THREAD_TICK);
 
             if (NULL != c->thread) {
                 mqtt_set_client_state(c, CLIENT_STATE_CONNECTED);
@@ -954,9 +954,9 @@ int mqtt_init(mqtt_client_t* c, client_init_params_t* init)
     memset(c->network, 0, sizeof(network_t));
 
     if ((MQTT_MIN_PAYLOAD_SIZE >= init->read_buf_size) || (MQTT_MAX_PAYLOAD_SIZE <= init->read_buf_size))
-        init->read_buf_size = MQTT_DEFAULT_BUF_SIZE;
+        init->read_buf_size = KAWAII_MQTT_DEFAULT_BUF_SIZE;
     if ((MQTT_MIN_PAYLOAD_SIZE >= init->write_buf_size) || (MQTT_MAX_PAYLOAD_SIZE <= init->read_buf_size))
-        init->write_buf_size = MQTT_DEFAULT_BUF_SIZE;
+        init->write_buf_size = KAWAII_MQTT_DEFAULT_BUF_SIZE;
     
     c->read_buf = (unsigned char*) platform_memory_alloc(init->read_buf_size);
     c->write_buf = (unsigned char*) platform_memory_alloc(init->write_buf_size);
@@ -970,8 +970,8 @@ int mqtt_init(mqtt_client_t* c, client_init_params_t* init)
     c->write_buf_size =  init->write_buf_size;
 
     c->packet_id = 1;
-    if ((init->cmd_timeout < MQTT_MIN_CMD_TIMEOUT) || (init->cmd_timeout > MQTT_MAX_CMD_TIMEOUT))
-        c->cmd_timeout = MQTT_DEFAULT_CMD_TIMEOUT;
+    if ((init->cmd_timeout < KAWAII_MQTT_MIN_CMD_TIMEOUT) || (init->cmd_timeout > KAWAII_MQTT_MAX_CMD_TIMEOUT))
+        c->cmd_timeout = KAWAII_MQTT_DEFAULT_CMD_TIMEOUT;
     else
         c->cmd_timeout = init->cmd_timeout;
     
@@ -980,13 +980,13 @@ int mqtt_init(mqtt_client_t* c, client_init_params_t* init)
     c->client_state = CLIENT_STATE_INITIALIZED;
 
     if (0 == init->connect_params.keep_alive_interval)
-        init->connect_params.keep_alive_interval = MQTT_KEEP_ALIVE_INTERVAL;
+        init->connect_params.keep_alive_interval = KAWAII_MQTT_KEEP_ALIVE_INTERVAL;
     
     if (0 == init->connect_params.mqtt_version)
-        init->connect_params.mqtt_version = MQTT_VERSION;
+        init->connect_params.mqtt_version = KAWAII_MQTT_VERSION;
     
     if (0 == init->reconnect_try_duration)
-        init->reconnect_try_duration = MQTT_RECONNECT_DEFAULT_DURATION;
+        init->reconnect_try_duration = KAWAII_MQTT_RECONNECT_DEFAULT_DURATION;
     
     init->connect_params.client_id_len = strlen(init->connect_params.client_id);
     init->connect_params.user_name_len = strlen(init->connect_params.user_name);

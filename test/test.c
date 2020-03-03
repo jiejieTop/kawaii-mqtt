@@ -23,6 +23,7 @@ static void topic_test1_handler(void* client, message_data_t* msg)
 
 int main(void)
 {
+    int err;
     char buf[100] = { 0 };
     mqtt_message_t msg;
     memset(&msg, 0, sizeof(msg));
@@ -30,15 +31,13 @@ int main(void)
     msg.qos = QOS0;
     msg.payload = (void *) buf;
 
-    printf("\nwelcome to mqttclient test...\n");
-
     log_init();
 
     rt_thread_delay(6000);
     
     init_params.read_buf_size = 1024;
     init_params.write_buf_size = 1024;
-#ifdef MQTT_NETWORK_TYPE_TLS
+#ifdef KAWAII_MQTT_NETWORK_TYPE_TLS
     extern const char *test_ca_get();
     init_params.connect_params.network_params.network_ssl_params.ca_crt = test_ca_get();
     init_params.connect_params.network_params.port = "8883";
@@ -54,21 +53,23 @@ int main(void)
 
     mqtt_init(&client, &init_params);
 
-    mqtt_connect(&client);
+    err = mqtt_connect(&client);
     
-    mqtt_subscribe(&client, "rtt-topic1", QOS0, topic_test1_handler);
-    mqtt_subscribe(&client, "rtt-topic2", QOS0, NULL);
+    LOG_I("mqtt connect return %d", err);
+    
+    err = mqtt_subscribe(&client, "rtt-topic1", QOS0, topic_test1_handler);
+    err += mqtt_subscribe(&client, "rtt-topic2", QOS0, NULL);
+    
+    LOG_I("mqtt subscribe return %d", err);
     
     while (1) {
 
         sprintf(buf, "welcome to mqttclient, this is a publish test, a rand number: %d ...", random_number());
-
         mqtt_publish(&client, "rtt-topic1", &msg);
-        
         rt_thread_mdelay(1000);
         
-        mqtt_publish(&client, "rtt-topic1", &msg);
-
+        sprintf(buf, "welcome to mqttclient, this is a publish test, a rand number: %d ...", random_number());
+        mqtt_publish(&client, "rtt-topic2", &msg);
         rt_thread_mdelay(1000);
     }
 }

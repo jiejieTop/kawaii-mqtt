@@ -5,8 +5,9 @@
  * @LastEditTime : 2019-12-28 01:51:38
  * @Description: the code belongs to jiejie, please keep the author information and source code according to the license.
  */
-#include "config.h"
+#include "salof_defconfig.h"
 
+#ifdef KAWAII_MQTT_USE_LOG
 
 void *salof_alloc(unsigned int size)
 {
@@ -130,5 +131,5 @@ int send_buff(char *buf, int len)
     return len;
 }
 
-
+#endif
 

@@ -17,20 +17,20 @@ path += [cwd + '/mqttclient']
 path += [cwd + '/network']
 path += [cwd + '/platform/RT-Thread']
 
-if GetDepend(['MQTT_NETWORK_TYPE_TLS']):
+if GetDepend(['KAWAII_MQTT_NETWORK_TYPE_TLS']):
     src += Glob('common/mbedtls/library/*.c')
     src += Glob('common/mbedtls/wrapper/*.c')
     path += [cwd + '/common/mbedtls/wrapper']
     path += [cwd + '/common/mbedtls/include']
     path += [cwd + '/common/mbedtls/include/mbedtls']
 
-if GetDepend(['LOG_IS_SALOF']):
+if GetDepend(['KAWAII_MQTT_LOG_IS_SALOF']):
     src += Glob('common/log/*.c')
     path += [cwd + '/common/log']
     
-if GetDepend(['PKG_USING_MQTTCLIENT_TEST']):
+if GetDepend(['PKG_USING_KAWAII_MQTT_TEST']):
     src += Glob('test/*.c')
 
-group = DefineGroup('mqttclient',src , depend = ['PKG_USING_MQTTCLIENT'], CPPPATH = path)
+group = DefineGroup('kawaii_mqtt',src , depend = ['PKG_USING_KAWAII_MQTT'], CPPPATH = path)
 
 Return('group')

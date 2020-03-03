@@ -2,21 +2,24 @@
  * @Author: jiejie
  * @Github: https://github.com/jiejieTop
  * @Date: 2019-12-25 23:56:34
- * @LastEditTime: 2020-02-24 01:05:11
+ * @LastEditTime: 2020-03-02 01:32:32
  * @Description: the code belongs to jiejie, please keep the author information and source code according to the license.
  */
-#ifndef _SALOF_CONFIG_H_
-#define _SALOF_CONFIG_H_
+#ifndef _SALOF_DEFCONFIG_H_
+#define _SALOF_DEFCONFIG_H_
 
-#include <rtconfig.h>
+#include "salof_config.h"
+
+#ifdef KAWAII_MQTT_USE_LOG
 
 #include <rtthread.h>
 #include <rthw.h>
 #include <stdio.h>
-#define salof_mutex     rt_mutex_t
-#define salof_sem       rt_sem_t
-#define salof_tcb       rt_thread_t
-#define SALOF_TASK_PRIO (RT_THREAD_PRIORITY_MAX - 1)
+
+#define salof_mutex                     rt_mutex_t
+#define salof_sem                       rt_sem_t
+#define salof_tcb                       rt_thread_t
+#define KAWAII_MQTT_SALOF_TASK_PRIO     (RT_THREAD_PRIORITY_MAX - 1)
     
 
 void *salof_alloc(unsigned int size);
@@ -39,5 +42,7 @@ unsigned int salof_get_tick(void);
 char *salof_get_task_name(void);
 extern int send_buff(char *buf, int len);
 
-#endif // !_SALOF_CONFIG_H_
+#endif
+
+#endif // !_SALOF_DEFCONFIG_H_
 

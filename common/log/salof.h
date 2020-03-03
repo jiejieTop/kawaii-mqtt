@@ -19,9 +19,9 @@ void salof(const char *fmt, ...);
 #define     FC_DARK     36
 #define     FC_WHITE    37
 
-#ifdef USE_LOG
+#ifdef KAWAII_MQTT_USE_LOG
 
-#ifdef USE_SALOF
+#ifdef KAWAII_MQTT_USE_SALOF
     #define     PRINT_LOG       salof
 #else
 #if ((! defined USE_SALOF) && (! defined PRINT_LOG))
@@ -33,7 +33,7 @@ void salof(const char *fmt, ...);
 #endif
 #endif
 
-#ifdef LOG_COLOR
+#ifdef KAWAII_MQTT_LOG_COLOR
     #define LOG_START(l, c)     PRINT_LOG("\033\n["#c"m["#l"] >> ")
     #define LOG_END             PRINT_LOG("\033[0m")  
 #else
@@ -41,11 +41,11 @@ void salof(const char *fmt, ...);
     #define LOG_END       
 #endif
 
-#if ((defined LOG_TS) && (defined LOG_TAR))
+#if ((defined KAWAII_MQTT_LOG_TS) && (defined KAWAII_MQTT_LOG_TAR))
     #define LOG_T           PRINT_LOG("[TS: %d] [TAR: %s] ",salof_get_tick(), salof_get_task_name())
-#elif (defined LOG_TS)
+#elif (defined KAWAII_MQTT_LOG_TS)
     #define LOG_T           PRINT_LOG("[TS: %d] ", salof_get_tick())
-#elif (defined LOG_TAR)
+#elif (defined KAWAII_MQTT_LOG_TAR)
     #define LOG_T           PRINT_LOG("[TAR: %s] ", salof_get_task_name())
 #else
     #define LOG_T
@@ -59,42 +59,42 @@ void salof(const char *fmt, ...);
         LOG_END;                        \
     } while (0)
 
-#define BASE_LEVEL      (0)
-#define ASSERT_LEVEL    (BASE_LEVEL + 1)
-#define ERR_LEVEL       (ASSERT_LEVEL + 1)
-#define WARN_LEVEL      (ERR_LEVEL + 1)
-#define INFO_LEVEL      (WARN_LEVEL + 1)
-#define DEBUG_LEVEL     (INFO_LEVEL + 1)
+#define KAWAII_MQTT_BASE_LEVEL      (0)
+#define KAWAII_MQTT_ASSERT_LEVEL    (KAWAII_MQTT_BASE_LEVEL + 1)
+#define KAWAII_MQTT_ERR_LEVEL       (KAWAII_MQTT_ASSERT_LEVEL + 1)
+#define KAWAII_MQTT_WARN_LEVEL      (KAWAII_MQTT_ERR_LEVEL + 1)
+#define KAWAII_MQTT_INFO_LEVEL      (KAWAII_MQTT_WARN_LEVEL + 1)
+#define KAWAII_MQTT_DEBUG_LEVEL     (KAWAII_MQTT_INFO_LEVEL + 1)
 
-#ifndef LOG_LEVEL
-    #define LOG_LEVEL   DEBUG_LEVEL
+#ifndef KAWAII_MQTT_LOG_LEVEL
+    #define KAWAII_MQTT_LOG_LEVEL   KAWAII_MQTT_DEBUG_LEVEL
 #endif 
 
-#if LOG_LEVEL < DEBUG_LEVEL
+#if KAWAII_MQTT_LOG_LEVEL < KAWAII_MQTT_DEBUG_LEVEL
     #define LOG_DEBUG(fmt, ...)
 #else
     #define LOG_DEBUG(fmt, ...)     LOG_LINE(D, 0, fmt, ##__VA_ARGS__)
 #endif
 
-#if LOG_LEVEL < INFO_LEVEL
+#if KAWAII_MQTT_LOG_LEVEL < KAWAII_MQTT_INFO_LEVEL
     #define LOG_INFO(fmt, ...)
 #else
     #define LOG_INFO(fmt, ...)      LOG_LINE(I, FC_GREEN, fmt, ##__VA_ARGS__)
 #endif
 
-#if LOG_LEVEL < WARN_LEVEL
+#if KAWAII_MQTT_LOG_LEVEL < KAWAII_MQTT_WARN_LEVEL
     #define LOG_WARN(fmt, ...)
 #else
     #define LOG_WARN(fmt, ...)      LOG_LINE(W, FC_YELLOW, fmt, ##__VA_ARGS__)
 #endif
 
-#if LOG_LEVEL < ERR_LEVEL
+#if KAWAII_MQTT_LOG_LEVEL < KAWAII_MQTT_ERR_LEVEL
     #define LOG_ERR(fmt, ...)
 #else
     #define LOG_ERR(fmt, ...)       LOG_LINE(E, FC_RED, fmt, ##__VA_ARGS__)
 #endif
 
-#if LOG_LEVEL < ASSERT_LEVEL
+#if KAWAII_MQTT_LOG_LEVEL < KAWAII_MQTT_ASSERT_LEVEL
     #define LOG_ASSERT(fmt, ...)
     #define ASSERT(x)
 #else
@@ -102,7 +102,7 @@ void salof(const char *fmt, ...);
     #define ASSERT(x)     if((x)==0) LOG_ASSERT("%s, %d\n",__FILE__,__LINE__)
 #endif
 
-#if LOG_LEVEL < BASE_LEVEL
+#if KAWAII_MQTT_LOG_LEVEL < KAWAII_MQTT_BASE_LEVEL
     #define LOG(fmt, ...)
 #else
     #define LOG(fmt, ...)           PRINT_LOG(fmt, ##__VA_ARGS__)

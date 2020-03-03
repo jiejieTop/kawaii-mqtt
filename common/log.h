@@ -2,15 +2,15 @@
  * @Author: jiejie
  * @Github: https://github.com/jiejieTop
  * @Date: 2019-12-27 03:25:58
- * @LastEditTime : 2020-02-20 01:16:25
+ * @LastEditTime: 2020-02-25 05:42:32
  * @Description: the code belongs to jiejie, please keep the author information and source code according to the license.
  */
 #ifndef _LOG_H_
 #define _LOG_H_
 
-#include <rtconfig.h>
+#include "mqtt_defconfig.h"
 
-#ifdef LOG_IS_SALOF
+#ifdef KAWAII_MQTT_LOG_IS_SALOF
     #include "salof.h"
 
     #define LOG_D(fmt, ...)   LOG_DEBUG(fmt, ##__VA_ARGS__)
@@ -20,56 +20,50 @@
     #define log_init   salof_init
 #else
     #include <stdio.h>
-    #include <rtthread.h>
-    #include <rtdevice.h>
     
-#ifndef LOG_LEVEL
-    #define LOG_LEVEL   DEBUG_LEVEL
-#endif 
+    #define KAWAII_MQTT_BASE_LEVEL      (0)
+    #define KAWAII_MQTT_ASSERT_LEVEL    (BASE_LEVEL + 1)
+    #define KAWAII_MQTT_ERR_LEVEL       (ASSERT_LEVEL + 1)
+    #define KAWAII_MQTT_WARN_LEVEL      (ERR_LEVEL + 1)
+    #define KAWAII_MQTT_INFO_LEVEL      (WARN_LEVEL + 1)
+    #define KAWAII_MQTT_DEBUG_LEVEL     (INFO_LEVEL + 1)
 
-    #define BASE_LEVEL      (0)
-    #define ASSERT_LEVEL    (BASE_LEVEL + 1)
-    #define ERR_LEVEL       (ASSERT_LEVEL + 1)
-    #define WARN_LEVEL      (ERR_LEVEL + 1)
-    #define INFO_LEVEL      (WARN_LEVEL + 1)
-    #define DEBUG_LEVEL     (INFO_LEVEL + 1)
-
-#if LOG_LEVEL < DEBUG_LEVEL
+#if KAWAII_MQTT_LOG_LEVEL < KAWAII_MQTT_DEBUG_LEVEL
     #define LOG_D(fmt, ...)
 #else
-    #define LOG_D(fmt, ...)     { rt_kprintf(fmt, ##__VA_ARGS__); printf("\n");}
+    #define LOG_D(fmt, ...)     { rt_kprintf(fmt, ##__VA_ARGS__); rt_kprintf("\n");}
 #endif
 
-#if LOG_LEVEL < INFO_LEVEL
+#if KAWAII_MQTT_LOG_LEVEL < KAWAII_MQTT_INFO_LEVEL
     #define LOG_I(fmt, ...)
 #else
-    #define LOG_I(fmt, ...)      { rt_kprintf(fmt, ##__VA_ARGS__); printf("\n");}
+    #define LOG_I(fmt, ...)      { rt_kprintf(fmt, ##__VA_ARGS__); rt_kprintf("\n");}
 #endif
 
-#if LOG_LEVEL < WARN_LEVEL
+#if KAWAII_MQTT_LOG_LEVEL < KAWAII_MQTT_WARN_LEVEL
     #define LOG_W(fmt, ...)
 #else
-    #define LOG_W(fmt, ...)      { rt_kprintf(fmt, ##__VA_ARGS__); printf("\n");}
+    #define LOG_W(fmt, ...)      { rt_kprintf(fmt, ##__VA_ARGS__); rt_kprintf("\n");}
 #endif
 
-#if LOG_LEVEL < ERR_LEVEL
+#if KAWAII_MQTT_LOG_LEVEL < KAWAII_MQTT_ERR_LEVEL
     #define LOG_E(fmt, ...)
 #else
-    #define LOG_E(fmt, ...)       { rt_kprintf(fmt, ##__VA_ARGS__); printf("\n");}
+    #define LOG_E(fmt, ...)       { rt_kprintf(fmt, ##__VA_ARGS__); rt_kprintf("\n");}
 #endif
 
-#if LOG_LEVEL < ASSERT_LEVEL
+#if KAWAII_MQTT_LOG_LEVEL < KAWAII_MQTT_ASSERT_LEVEL
     #define LOG_ASSERT(fmt, ...)
     #define ASSERT(x)
 #else
-    #define LOG_ASSERT(fmt, ...)    { rt_kprintf(fmt, ##__VA_ARGS__); printf("\n");}
+    #define LOG_ASSERT(fmt, ...)    { rt_kprintf(fmt, ##__VA_ARGS__); rt_kprintf("\n");}
     #define ASSERT(x)     if((x)==0) LOG_ASSERT("%s, %d\n",__FILE__,__LINE__)
 #endif
 
-#if LOG_LEVEL < BASE_LEVEL
+#if KAWAII_MQTT_LOG_LEVEL < KAWAII_MQTT_BASE_LEVEL
     #define LOG(fmt, ...)
 #else
-    #define LOG(fmt, ...)           { rt_kprintf(fmt, ##__VA_ARGS__); printf("\n");}
+    #define LOG(fmt, ...)           { rt_kprintf(fmt, ##__VA_ARGS__); rt_kprintf("\n");}
 #endif
 
     #define log_init()

@@ -9,40 +9,45 @@
 
 #include "salof.h"
 
-#ifndef SALOF_BUFF_SIZE
-    #define     SALOF_BUFF_SIZE     (1024U)
+#ifdef KAWAII_MQTT_USE_LOG
+
+#ifndef KAWAII_MQTT_SALOF_BUFF_SIZE
+    #define     KAWAII_MQTT_SALOF_BUFF_SIZE     (1024U)
 #endif 
-#ifndef SALOF_FIFO_SIZE
-    #define     SALOF_FIFO_SIZE     (2048U)
+#ifndef KAWAII_MQTT_SALOF_FIFO_SIZE
+    #define     KAWAII_MQTT_SALOF_FIFO_SIZE     (2048U)
 #endif 
 
 static int salof_out(char *buf, int len);
 void salof_handler( void );
 
-#ifdef USE_SALOF
+#ifdef KAWAII_MQTT_USE_SALOF
 #include <string.h>
 static fifo_t _salof_fifo = NULL;
 static int _len;
-static char _out_buff[SALOF_BUFF_SIZE];
+static char _out_buff[KAWAII_MQTT_SALOF_BUFF_SIZE];
 
-#ifndef USE_IDLE_HOOK
+#ifndef KAWAII_MQTT_USE_IDLE_HOOK
 static salof_tcb _salof_task;
 void salof_task(void *parm);
 #endif
 
 #endif
 
-static char _format_buff[SALOF_BUFF_SIZE];
+static char _format_buff[KAWAII_MQTT_SALOF_BUFF_SIZE];
 
 int salof_init(void)
 {
-#ifdef USE_SALOF
-    _salof_fifo = fifo_create(SALOF_FIFO_SIZE);
+#ifdef KAWAII_MQTT_USE_SALOF
+    _salof_fifo = fifo_create(KAWAII_MQTT_SALOF_FIFO_SIZE);
     if(_salof_fifo == NULL)
         return -1;
 
-#ifndef USE_IDLE_HOOK
-    _salof_task = salof_task_create("salof_task", salof_task, NULL, SALOF_THREAD_STACK_SIZE, SALOF_TASK_PRIO, SALOF_THREAD_TICK);
+#ifndef KAWAII_MQTT_USE_IDLE_HOOK
+    _salof_task = salof_task_create("salof_task", salof_task, NULL, 
+                                    KAWAII_MQTT_SALOF_THREAD_STACK_SIZE, 
+                                    KAWAII_MQTT_SALOF_TASK_PRIO, 
+                                    KAWAII_MQTT_SALOF_THREAD_TICK);
     if(_salof_task == NULL)
         return -1;
 #else
@@ -59,12 +64,12 @@ void salof(const char *fmt, ...)
     int len;
     va_start(args, fmt);
 
-    len = format_nstr(_format_buff, SALOF_BUFF_SIZE - 1, fmt, args);
+    len = format_nstr(_format_buff, KAWAII_MQTT_SALOF_BUFF_SIZE - 1, fmt, args);
 
-    if(len > SALOF_BUFF_SIZE)
-        len = SALOF_BUFF_SIZE - 1;
+    if(len > KAWAII_MQTT_SALOF_BUFF_SIZE)
+        len = KAWAII_MQTT_SALOF_BUFF_SIZE - 1;
 
-#ifdef USE_SALOF
+#ifdef KAWAII_MQTT_USE_SALOF
     fifo_write(_salof_fifo, _format_buff, len, 100);
 #else
     salof_out(_format_buff, len);
@@ -78,7 +83,7 @@ static int salof_out(char *buf, int len)
     return send_buff(buf, len);
 }
 
-#ifdef USE_SALOF
+#ifdef KAWAII_MQTT_USE_SALOF
 void salof_handler( void )
 {
     _len = fifo_read(_salof_fifo, _out_buff, sizeof(_out_buff), 0);
@@ -87,18 +92,18 @@ void salof_handler( void )
         memset(_out_buff, 0, _len);
     }
 }
-#endif
 
-#ifndef USE_IDLE_HOOK
+
+#ifndef KAWAII_MQTT_USE_IDLE_HOOK
 void salof_task(void *parm)
 {   
     (void)parm;
-    while(1)
-    {
-#ifdef USE_SALOF
+    while(1) {
         salof_handler();
-#endif
     } 
 }
 #endif
 
+#endif
+
+#endif

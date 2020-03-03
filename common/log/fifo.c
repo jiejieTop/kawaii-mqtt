@@ -1,6 +1,8 @@
 #include "fifo.h"
 #include <string.h>
 
+#ifdef KAWAII_MQTT_USE_LOG
+
 static unsigned int _flbs(unsigned int x)   /* find last bit set*/
 {
     unsigned int r = 32;
@@ -46,8 +48,6 @@ fifo_t fifo_create(unsigned int size)
         size = _fifo_align(size);
 
     fifo = (fifo_t)salof_alloc((sizeof(struct fifo) + size));
-
-    memset(fifo, 0, (sizeof(struct fifo) + size));
 
     if (NULL != fifo) {
         fifo->buff = (unsigned char *)fifo + sizeof(struct fifo);
@@ -133,3 +133,4 @@ unsigned int fifo_write_able(fifo_t fifo)
     return (fifo->size - fifo_read_able(fifo));
 }
 
+#endif
