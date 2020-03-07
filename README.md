@@ -38,8 +38,25 @@
 
 ![整体框架](png/mqttclient.png)
 
+
+## 版本
+
+| 发布版本 | 描述 | 
+| --- | --- |
+| [v1.0.0] | 初次发布，完成基本概念及其稳定性验证 |
+
+## 问题
+
+欢迎以 [GitHub Issues](https://github.com/jiejieTop/kawaii-mqtt/issues) 的形式提交问题和bug报告
+
+## 版权和许可
+
+kawaii-mqtt 由 [Apache License v2.0](https://github.com/jiejieTop/kawaii-mqtt/blob/master/LICENSE) 许可 提供。
+
+简单谈谈关于开源协议的描述，[Apache License v2.0](https://github.com/jiejieTop/kawaii-mqtt/blob/master/LICENSE) 鼓励代码共享和尊重原作者的著作权，可以自由的使用，修改源代码，也可以将修改后的代码作为开源或者专有软件再发布（作为开源或闭源商业软件），**但本源码必须保留作者版权声明**。
+
 # API
-`mqttclient`拥有非常简洁的`api`接口，并且api见名知其义，非常易于使用。
+`kawaii-mqtt`拥有非常简洁的`api`接口，并且api见名知其义，非常易于使用。
 ```c
 int mqtt_init(mqtt_client_t* c, client_init_params_t* init);
 int mqtt_release(mqtt_client_t* c);
@@ -143,7 +160,7 @@ typedef struct mqtt_client {
 Location:   
     -> RT-Thread online packages
         -> IoT - internet of things
-            -> mqttclient
+            -> kawaii-mqtt
 ```
 4. 然后就是随意配置了。
 
