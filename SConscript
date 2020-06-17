@@ -18,11 +18,11 @@ path += [cwd + '/network']
 path += [cwd + '/platform/RT-Thread']
 
 if GetDepend(['KAWAII_MQTT_NETWORK_TYPE_TLS']):
-    src += Glob('common/mbedtls/library/*.c')
-    src += Glob('common/mbedtls/wrapper/*.c')
-    path += [cwd + '/common/mbedtls/wrapper']
-    path += [cwd + '/common/mbedtls/include']
-    path += [cwd + '/common/mbedtls/include/mbedtls']
+    src += Glob('network/mbedtls/library/*.c')
+    src += Glob('network/mbedtls/wrapper/*.c')
+    path += [cwd + '/network/mbedtls/wrapper']
+    path += [cwd + '/network/mbedtls/include']
+    path += [cwd + '/network/mbedtls/include/mbedtls']
 
 if GetDepend(['KAWAII_MQTT_LOG_IS_SALOF']):
     src += Glob('common/log/*.c')

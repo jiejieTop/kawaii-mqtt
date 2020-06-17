@@ -9,6 +9,6 @@
 #ifndef _SALOF_CONFIG_H_
 #define _SALOF_CONFIG_H_
 
-#include "rtconfig.h"
+#include "mqtt_config.h"
 
 #endif /* _SALOF_CONFIG_H_ */

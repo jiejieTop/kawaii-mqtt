@@ -8,7 +8,7 @@
 #include "format.h"
 #include "salof_defconfig.h"
 
-#ifdef KAWAII_MQTT_USE_LOG
+#ifdef USE_LOG
 
 static int _get_atoi(const char **str)
 {

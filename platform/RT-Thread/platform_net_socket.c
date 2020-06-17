@@ -2,14 +2,14 @@
  * @Author: jiejie
  * @Github: https://github.com/jiejieTop
  * @Date: 2020-01-10 23:45:59
- * @LastEditTime : 2020-01-13 02:48:53
+ * @LastEditTime: 2020-04-25 17:50:58
  * @Description: the code belongs to jiejie, please keep the author information and source code according to the license.
  */
 #include "platform_net_socket.h"
 
 int platform_net_socket_connect(const char *host, const char *port, int proto)
 {
-    int fd, ret = MQTT_SOCKET_UNKNOWN_HOST;
+    int fd, ret = MQTT_SOCKET_UNKNOWN_HOST_ERROR;
     struct addrinfo hints, *addr_list, *cur;
     
     /* Do name resolution with both IPv6 and IPv4 */
@@ -25,7 +25,7 @@ int platform_net_socket_connect(const char *host, const char *port, int proto)
     for (cur = addr_list; cur != NULL; cur = cur->ai_next) {
         fd = socket(cur->ai_family, cur->ai_socktype, cur->ai_protocol);
         if (fd < 0) {
-            ret = MQTT_SOCKET_FAILED;
+            ret = MQTT_SOCKET_FAILED_ERROR;
             continue;
         }
 
@@ -49,30 +49,35 @@ int platform_net_socket_recv(int fd, void *buf, size_t len, int flags)
 
 int platform_net_socket_recv_timeout(int fd, unsigned char *buf, int len, int timeout)
 {
-    int rc;
-    int bytes = 0;
-	struct timeval tv = {
+    int nread;
+    int nleft = len;
+    unsigned char *ptr; 
+    ptr = buf;
+
+    struct timeval tv = {
         timeout / 1000, 
         (timeout % 1000) * 1000
     };
     
-	if (tv.tv_sec < 0 || (tv.tv_sec == 0 && tv.tv_usec <= 0)) {
-		tv.tv_sec = 0;
-		tv.tv_usec = 100;
-	}
+    if (tv.tv_sec < 0 || (tv.tv_sec == 0 && tv.tv_usec <= 0)) {
+        tv.tv_sec = 0;
+        tv.tv_usec = 100;
+    }
 
-	platform_net_socket_setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, (char *)&tv, sizeof(struct timeval));
+    platform_net_socket_setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, (char *)&tv, sizeof(struct timeval));
 
-	while (bytes < len) {
-		rc = platform_net_socket_recv(fd, &buf[bytes], (size_t)(len - bytes), 0);
-		if (rc <= 0) {
-			bytes = rc;
-			break;
-		} else {
-			bytes += rc;
-		}
-	}
-	return bytes;
+    while (nleft > 0) {
+        nread = platform_net_socket_recv(fd, ptr, nleft, 0);
+        if (nread < 0) {
+            return -1;
+        } else if (nread == 0) {
+            break;
+        }
+
+        nleft -= nread;
+        ptr += nread;
+    }
+    return len - nleft;
 }
 
 int platform_net_socket_write(int fd, void *buf, size_t len)
@@ -87,13 +92,13 @@ int platform_net_socket_write_timeout(int fd, unsigned char *buf, int len, int t
         (timeout % 1000) * 1000
     };
     
-	if (tv.tv_sec < 0 || (tv.tv_sec == 0 && tv.tv_usec <= 0)) {
-		tv.tv_sec = 0;
-		tv.tv_usec = 100;
-	}
+    if (tv.tv_sec < 0 || (tv.tv_sec == 0 && tv.tv_usec <= 0)) {
+        tv.tv_sec = 0;
+        tv.tv_usec = 100;
+    }
 
-	setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, (char *)&tv,sizeof(struct timeval));
-	
+    setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, (char *)&tv,sizeof(struct timeval));
+    
 	return send(fd, buf, len, 0);
 }
 
