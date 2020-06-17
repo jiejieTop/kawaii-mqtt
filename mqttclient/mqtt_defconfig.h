@@ -11,6 +11,10 @@
 
 #include "rtconfig.h"
 
+#ifndef KAWAII_MQTT_LOG_LEVEL
+    #define KAWAII_MQTT_LOG_LEVEL                          KAWAII_MQTT_LOG_DEBUG_LEVEL   //KAWAII_MQTT_LOG_WARN_LEVEL KAWAII_MQTT_LOG_DEBUG_LEVEL
+#endif // !KAWAII_MQTT_LOG_LEVEL
+
 #ifndef KAWAII_MQTT_MAX_PACKET_ID
     #define     KAWAII_MQTT_MAX_PACKET_ID                  (0xFFFF - 1)
 #endif // !KAWAII_MQTT_MAX_PACKET_ID
