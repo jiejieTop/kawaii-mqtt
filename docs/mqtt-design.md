@@ -144,9 +144,9 @@ mqtt_release()
 通过宏定义去统一设置MQTT客户端结构**mqtt_client_t**的信息，定义如下：
 
 ```c
-#define MQTT_CLIENT_SET_DEFINE(name, type, res)         \
+#define KAWAII_MQTT_CLIENT_SET_DEFINE(name, type, res)         \
     type mqtt_set_##name(mqtt_client_t *c, type t) {    \
-        MQTT_ROBUSTNESS_CHECK((c), res);                \
+        KAWAII_MQTT_ROBUSTNESS_CHECK((c), res);                \
         c->mqtt_##name = t;                             \
         return c->mqtt_##name;                          \
     }
@@ -155,23 +155,23 @@ mqtt_release()
 由编译器预处理得到相关的函数：**mqtt_set_xxx()**。
 
 ```c
-MQTT_CLIENT_SET_DEFINE(client_id, char*, NULL)
-MQTT_CLIENT_SET_DEFINE(user_name, char*, NULL)
-MQTT_CLIENT_SET_DEFINE(password, char*, NULL)
-MQTT_CLIENT_SET_DEFINE(host, char*, NULL)
-MQTT_CLIENT_SET_DEFINE(port, char*, NULL)
-MQTT_CLIENT_SET_DEFINE(ca, char*, NULL)
-MQTT_CLIENT_SET_DEFINE(reconnect_data, void*, NULL)
-MQTT_CLIENT_SET_DEFINE(keep_alive_interval, uint16_t, 0)
-MQTT_CLIENT_SET_DEFINE(will_flag, uint32_t, 0)
-MQTT_CLIENT_SET_DEFINE(clean_session, uint32_t, 0)
-MQTT_CLIENT_SET_DEFINE(version, uint32_t, 0)
-MQTT_CLIENT_SET_DEFINE(cmd_timeout, uint32_t, 0)
-MQTT_CLIENT_SET_DEFINE(read_buf_size, uint32_t, 0)
-MQTT_CLIENT_SET_DEFINE(write_buf_size, uint32_t, 0)
-MQTT_CLIENT_SET_DEFINE(reconnect_try_duration, uint32_t, 0)
-MQTT_CLIENT_SET_DEFINE(reconnect_handler, reconnect_handler_t, NULL)
-MQTT_CLIENT_SET_DEFINE(interceptor_handler, interceptor_handler_t, NULL)
+KAWAII_MQTT_CLIENT_SET_DEFINE(client_id, char*, NULL)
+KAWAII_MQTT_CLIENT_SET_DEFINE(user_name, char*, NULL)
+KAWAII_MQTT_CLIENT_SET_DEFINE(password, char*, NULL)
+KAWAII_MQTT_CLIENT_SET_DEFINE(host, char*, NULL)
+KAWAII_MQTT_CLIENT_SET_DEFINE(port, char*, NULL)
+KAWAII_MQTT_CLIENT_SET_DEFINE(ca, char*, NULL)
+KAWAII_MQTT_CLIENT_SET_DEFINE(reconnect_data, void*, NULL)
+KAWAII_MQTT_CLIENT_SET_DEFINE(keep_alive_interval, uint16_t, 0)
+KAWAII_MQTT_CLIENT_SET_DEFINE(will_flag, uint32_t, 0)
+KAWAII_MQTT_CLIENT_SET_DEFINE(clean_session, uint32_t, 0)
+KAWAII_MQTT_CLIENT_SET_DEFINE(version, uint32_t, 0)
+KAWAII_MQTT_CLIENT_SET_DEFINE(cmd_timeout, uint32_t, 0)
+KAWAII_MQTT_CLIENT_SET_DEFINE(read_buf_size, uint32_t, 0)
+KAWAII_MQTT_CLIENT_SET_DEFINE(write_buf_size, uint32_t, 0)
+KAWAII_MQTT_CLIENT_SET_DEFINE(reconnect_try_duration, uint32_t, 0)
+KAWAII_MQTT_CLIENT_SET_DEFINE(reconnect_handler, reconnect_handler_t, NULL)
+KAWAII_MQTT_CLIENT_SET_DEFINE(interceptor_handler, interceptor_handler_t, NULL)
 ```
 
 ## 连接服务器
@@ -207,7 +207,7 @@ int mqtt_connect(mqtt_client_t* c);
 
     ```c
     /* connect success, and need init mqtt thread */
-    c->mqtt_thread= platform_thread_init("mqtt_yield_thread", mqtt_yield_thread, c, MQTT_THREAD_STACK_SIZE, MQTT_THREAD_PRIO, MQTT_THREAD_TICK);
+    c->mqtt_thread= platform_thread_init("mqtt_yield_thread", mqtt_yield_thread, c, KAWAII_MQTT_THREAD_STACK_SIZE, KAWAII_MQTT_THREAD_PRIO, KAWAII_MQTT_THREAD_TICK);
 
     if (NULL != c->mqtt_thread) {
         mqtt_set_client_state(c, CLIENT_STATE_CONNECTED);

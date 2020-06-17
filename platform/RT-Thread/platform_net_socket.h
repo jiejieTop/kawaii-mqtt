@@ -11,7 +11,7 @@
 #include "network.h"
 #include "mqtt_error.h"
 
-#ifdef MQTT_NETSOCKET_USE_SAL
+#ifdef KAWAII_MQTT_NETSOCKET_USE_SAL
 
 #include <sys/socket.h>
 #include <sys/time.h>
@@ -28,7 +28,7 @@
 #include <lwip/sockets.h>
 #include "lwip/netdb.h"
 
-#endif // MQTT_NETSOCKET_USE_SAL
+#endif // KAWAII_MQTT_NETSOCKET_USE_SAL
 
 #define PLATFORM_NET_PROTO_TCP  0 /**< The TCP transport protocol */
 #define PLATFORM_NET_PROTO_UDP  1 /**< The UDP transport protocol */

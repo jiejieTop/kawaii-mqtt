@@ -11,7 +11,7 @@
 #include "platform_timer.h"
 #include "random.h"
 
-#ifndef MQTT_NETWORK_TYPE_NO_TLS
+#ifndef KAWAII_MQTT_NETWORK_TYPE_NO_TLS
 
 #include "mbedtls/platform.h"
 #include "mbedtls/ssl.h"
@@ -27,7 +27,7 @@
 static int server_certificate_verify(void *hostname, mbedtls_x509_crt *crt, int depth, uint32_t *flags)
 {
     if (0 != *flags)
-        MQTT_LOG_E("%s:%d %s()... server_certificate_verify failed returned 0x%04x\n", __FILE__, __LINE__, __FUNCTION__, *flags);
+        KAWAII_MQTT_LOG_E("%s:%d %s()... server_certificate_verify failed returned 0x%04x\n", __FILE__, __LINE__, __FUNCTION__, *flags);
     return *flags;
 }
 #endif
@@ -50,7 +50,7 @@ static int nettype_tls_entropy_source(void *data, uint8_t *output, size_t len, s
 
 static int nettype_tls_init(network_t* n, nettype_tls_params_t* nettype_tls_params)
 {
-    int rc = MQTT_SUCCESS_ERROR;
+    int rc = KAWAII_MQTT_SUCCESS_ERROR;
     
     mbedtls_platform_set_calloc_free(platform_memory_calloc, platform_memory_free);
     
@@ -69,13 +69,13 @@ static int nettype_tls_init(network_t* n, nettype_tls_params_t* nettype_tls_para
 
     if ((rc = mbedtls_ctr_drbg_seed(&(nettype_tls_params->ctr_drbg), mbedtls_entropy_func,
                                     &(nettype_tls_params->entropy), NULL, 0)) != 0) {
-        MQTT_LOG_E("mbedtls_ctr_drbg_seed failed returned 0x%04x", (rc < 0 )? -rc : rc);
+        KAWAII_MQTT_LOG_E("mbedtls_ctr_drbg_seed failed returned 0x%04x", (rc < 0 )? -rc : rc);
         RETURN_ERROR(rc);
     }
 
     if ((rc = mbedtls_ssl_config_defaults(&(nettype_tls_params->ssl_conf), MBEDTLS_SSL_IS_CLIENT,
                                            MBEDTLS_SSL_TRANSPORT_STREAM, MBEDTLS_SSL_PRESET_DEFAULT)) != 0) {
-        MQTT_LOG_E("mbedtls_ssl_config_defaults failed returned 0x%04x", (rc < 0 )? -rc : rc);
+        KAWAII_MQTT_LOG_E("mbedtls_ssl_config_defaults failed returned 0x%04x", (rc < 0 )? -rc : rc);
         RETURN_ERROR(rc);
     }
 
@@ -87,7 +87,7 @@ static int nettype_tls_init(network_t* n, nettype_tls_params_t* nettype_tls_para
 
         if (0 != (rc = (mbedtls_x509_crt_parse(&(nettype_tls_params->ca_cert), (unsigned char *)n->ca_crt,
                                           (n->ca_crt_len + 1))))) {
-            MQTT_LOG_E("%s:%d %s()... parse ca crt failed returned 0x%04x", __FILE__, __LINE__, __FUNCTION__, (rc < 0 )? -rc : rc);
+            KAWAII_MQTT_LOG_E("%s:%d %s()... parse ca crt failed returned 0x%04x", __FILE__, __LINE__, __FUNCTION__, (rc < 0 )? -rc : rc);
             RETURN_ERROR(rc);
         }
     }
@@ -96,7 +96,7 @@ static int nettype_tls_init(network_t* n, nettype_tls_params_t* nettype_tls_para
 
     if ((rc = mbedtls_ssl_conf_own_cert(&(nettype_tls_params->ssl_conf),
                                          &(nettype_tls_params->client_cert), &(nettype_tls_params->private_key))) != 0) {
-        MQTT_LOG_E("%s:%d %s()... mbedtls_ssl_conf_own_cert failed returned 0x%04x", __FILE__, __LINE__, __FUNCTION__, (rc < 0 )? -rc : rc);
+        KAWAII_MQTT_LOG_E("%s:%d %s()... mbedtls_ssl_conf_own_cert failed returned 0x%04x", __FILE__, __LINE__, __FUNCTION__, (rc < 0 )? -rc : rc);
         RETURN_ERROR(rc);
     }
     
@@ -108,20 +108,20 @@ static int nettype_tls_init(network_t* n, nettype_tls_params_t* nettype_tls_para
     mbedtls_ssl_conf_read_timeout(&(nettype_tls_params->ssl_conf), n->timeout_ms);
 
     if ((rc = mbedtls_ssl_setup(&(nettype_tls_params->ssl), &(nettype_tls_params->ssl_conf))) != 0) {
-        MQTT_LOG_E("mbedtls_ssl_setup failed returned 0x%04x", (rc < 0 )? -rc : rc);
+        KAWAII_MQTT_LOG_E("mbedtls_ssl_setup failed returned 0x%04x", (rc < 0 )? -rc : rc);
         RETURN_ERROR(rc);
     }
 
 #if defined(MBEDTLS_X509_CRT_PARSE_C)
     if ((rc = mbedtls_ssl_set_hostname(&(nettype_tls_params->ssl), n->host)) != 0) {
-        MQTT_LOG_E("%s:%d %s()... mbedtls_ssl_set_hostname failed returned 0x%04x", __FILE__, __LINE__, __FUNCTION__, (rc < 0 )? -rc : rc);
+        KAWAII_MQTT_LOG_E("%s:%d %s()... mbedtls_ssl_set_hostname failed returned 0x%04x", __FILE__, __LINE__, __FUNCTION__, (rc < 0 )? -rc : rc);
         RETURN_ERROR(rc);
     }
 #endif
 
     mbedtls_ssl_set_bio(&(nettype_tls_params->ssl), &(nettype_tls_params->socket_fd), mbedtls_net_send, mbedtls_net_recv, mbedtls_net_recv_timeout);
 
-    RETURN_ERROR(MQTT_SUCCESS_ERROR);
+    RETURN_ERROR(KAWAII_MQTT_SUCCESS_ERROR);
 }
 
 
@@ -129,16 +129,16 @@ int nettype_tls_connect(network_t* n)
 {
     int rc;
     if (NULL == n)
-        RETURN_ERROR(MQTT_NULL_VALUE_ERROR);
+        RETURN_ERROR(KAWAII_MQTT_NULL_VALUE_ERROR);
     
     nettype_tls_params_t *nettype_tls_params = (nettype_tls_params_t *) platform_memory_alloc(sizeof(nettype_tls_params_t));
 
     if (NULL == nettype_tls_params)
-        RETURN_ERROR(MQTT_MEM_NOT_ENOUGH_ERROR);
+        RETURN_ERROR(KAWAII_MQTT_MEM_NOT_ENOUGH_ERROR);
 
 
     rc = nettype_tls_init(n, nettype_tls_params);
-    if (MQTT_SUCCESS_ERROR != rc)
+    if (KAWAII_MQTT_SUCCESS_ERROR != rc)
         goto exit;
 
     if (0 != (rc = mbedtls_net_connect(&(nettype_tls_params->socket_fd), n->host, n->port, MBEDTLS_NET_PROTO_TCP)))
@@ -146,10 +146,10 @@ int nettype_tls_connect(network_t* n)
 
     while ((rc = mbedtls_ssl_handshake(&(nettype_tls_params->ssl))) != 0) {
         if (rc != MBEDTLS_ERR_SSL_WANT_READ && rc != MBEDTLS_ERR_SSL_WANT_WRITE) {
-            MQTT_LOG_E("%s:%d %s()...mbedtls handshake failed returned 0x%04x", __FILE__, __LINE__, __FUNCTION__, (rc < 0 )? -rc : rc);
+            KAWAII_MQTT_LOG_E("%s:%d %s()...mbedtls handshake failed returned 0x%04x", __FILE__, __LINE__, __FUNCTION__, (rc < 0 )? -rc : rc);
 #if defined(MBEDTLS_X509_CRT_PARSE_C)
             if (rc == MBEDTLS_ERR_X509_CERT_VERIFY_FAILED) {
-                MQTT_LOG_E("%s:%d %s()...unable to verify the server's certificate", __FILE__, __LINE__, __FUNCTION__);
+                KAWAII_MQTT_LOG_E("%s:%d %s()...unable to verify the server's certificate", __FILE__, __LINE__, __FUNCTION__);
             }
 #endif
             goto exit;
@@ -157,12 +157,12 @@ int nettype_tls_connect(network_t* n)
     }
 
     if ((rc = mbedtls_ssl_get_verify_result(&(nettype_tls_params->ssl))) != 0) {
-        MQTT_LOG_E("%s:%d %s()...mbedtls_ssl_get_verify_result returned 0x%04x", __FILE__, __LINE__, __FUNCTION__, (rc < 0 )? -rc : rc);
+        KAWAII_MQTT_LOG_E("%s:%d %s()...mbedtls_ssl_get_verify_result returned 0x%04x", __FILE__, __LINE__, __FUNCTION__, (rc < 0 )? -rc : rc);
         goto exit;
     }
 
     n->nettype_tls_params = nettype_tls_params;
-    RETURN_ERROR(MQTT_SUCCESS_ERROR)
+    RETURN_ERROR(KAWAII_MQTT_SUCCESS_ERROR)
 
 exit:
     platform_memory_free(nettype_tls_params);
@@ -203,7 +203,7 @@ int nettype_tls_write(network_t *n, unsigned char *buf, int len, int timeout)
     platform_timer_t timer;
 
     if (NULL == n)
-        RETURN_ERROR(MQTT_NULL_VALUE_ERROR);
+        RETURN_ERROR(KAWAII_MQTT_NULL_VALUE_ERROR);
     
     nettype_tls_params_t *nettype_tls_params = (nettype_tls_params_t *) n->nettype_tls_params;
 
@@ -216,7 +216,7 @@ int nettype_tls_write(network_t *n, unsigned char *buf, int len, int timeout)
         if (rc > 0) {
             write_len += rc;
         } else if ((rc == 0) || ((rc != MBEDTLS_ERR_SSL_WANT_WRITE) && (rc != MBEDTLS_ERR_SSL_WANT_READ) && (rc != MBEDTLS_ERR_SSL_TIMEOUT))) {
-            MQTT_LOG_E("%s:%d %s()... mbedtls_ssl_write failed: 0x%04x", __FILE__, __LINE__, __FUNCTION__, (rc < 0 )? -rc : rc);
+            KAWAII_MQTT_LOG_E("%s:%d %s()... mbedtls_ssl_write failed: 0x%04x", __FILE__, __LINE__, __FUNCTION__, (rc < 0 )? -rc : rc);
             break;
         } 
     } while((!platform_timer_is_expired(&timer)) && (write_len < len));
@@ -231,7 +231,7 @@ int nettype_tls_read(network_t *n, unsigned char *buf, int len, int timeout)
     platform_timer_t timer;
 
     if (NULL == n)
-        RETURN_ERROR(MQTT_NULL_VALUE_ERROR);
+        RETURN_ERROR(KAWAII_MQTT_NULL_VALUE_ERROR);
     
     nettype_tls_params_t *nettype_tls_params = (nettype_tls_params_t *) n->nettype_tls_params;
 
@@ -244,7 +244,7 @@ int nettype_tls_read(network_t *n, unsigned char *buf, int len, int timeout)
         if (rc > 0) {
             read_len += rc;
         } else if ((rc == 0) || ((rc != MBEDTLS_ERR_SSL_WANT_WRITE) && (rc != MBEDTLS_ERR_SSL_WANT_READ) && (rc != MBEDTLS_ERR_SSL_TIMEOUT))) {
-            // MQTT_LOG_E("%s:%d %s()... mbedtls_ssl_read failed: 0x%04x", __FILE__, __LINE__, __FUNCTION__, (rc < 0 )? -rc : rc);
+            // KAWAII_MQTT_LOG_E("%s:%d %s()... mbedtls_ssl_read failed: 0x%04x", __FILE__, __LINE__, __FUNCTION__, (rc < 0 )? -rc : rc);
             break;
         } 
     } while((!platform_timer_is_expired(&timer)) && (read_len < len));
@@ -252,4 +252,4 @@ int nettype_tls_read(network_t *n, unsigned char *buf, int len, int timeout)
     return read_len;
 }
 
-#endif /* MQTT_NETWORK_TYPE_NO_TLS */
+#endif /* KAWAII_MQTT_NETWORK_TYPE_NO_TLS */

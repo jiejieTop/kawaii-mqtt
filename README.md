@@ -179,12 +179,12 @@ Location:
 ```c
 #define BASE_LEVEL      (0)
 #define ASSERT_LEVEL    (BASE_LEVEL + 1)            /* 日志输出级别：断言级别（非常高优先级） */
-#define ERR_LEVEL       (ASSERT_LEVEL + 1)          /* 日志输出级别：错误级别（高优先级） */
-#define WARN_LEVEL      (ERR_LEVEL + 1)             /* 日志输出级别：警告级别（中优先级） */
-#define INFO_LEVEL      (WARN_LEVEL + 1)            /* 日志输出级别：信息级别（低优先级） */
-#define DEBUG_LEVEL     (INFO_LEVEL + 1)            /* 日志输出级别：调试级别（更低优先级） */
+#define KAWAII_MQTT_ERR_LEVEL       (ASSERT_LEVEL + 1)          /* 日志输出级别：错误级别（高优先级） */
+#define KAWAII_MQTT_WARN_LEVEL      (KAWAII_MQTT_ERR_LEVEL + 1)             /* 日志输出级别：警告级别（中优先级） */
+#define KAWAII_MQTT_INFO_LEVEL      (KAWAII_MQTT_WARN_LEVEL + 1)            /* 日志输出级别：信息级别（低优先级） */
+#define KAWAII_MQTT_DEBUG_LEVEL     (KAWAII_MQTT_INFO_LEVEL + 1)            /* 日志输出级别：调试级别（更低优先级） */
 
-#define         LOG_LEVEL                   WARN_LEVEL      /* 日志输出级别 */
+#define         KAWAII_MQTT_LOG_LEVEL                   KAWAII_MQTT_WARN_LEVEL      /* 日志输出级别 */
 ```
 
 **日志其他选项：**
@@ -321,7 +321,7 @@ mqtt_wait_packet(c, CONNACK, &connect_timer)
 4. 连接成功后创建一个内部线程`mqtt_yield_thread`，并在合适的时候启动它：
 
 ```c
-platform_thread_init("mqtt_yield_thread", mqtt_yield_thread, c, MQTT_THREAD_STACK_SIZE, MQTT_THREAD_PRIO, MQTT_THREAD_TICK)
+platform_thread_init("mqtt_yield_thread", mqtt_yield_thread, c, KAWAII_MQTT_THREAD_STACK_SIZE, KAWAII_MQTT_THREAD_PRIO, KAWAII_MQTT_THREAD_TICK)
 
 if (NULL != c->thread) {
     mqtt_set_client_state(c, CLIENT_STATE_CONNECTED);

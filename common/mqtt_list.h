@@ -5,8 +5,8 @@
  * @LastEditTime: 2020-04-27 23:25:37
  * @Description: the code belongs to jiejie, please keep the author information and source code according to the license.
  */
-#ifndef _MQTT_LIST_H_
-#define _MQTT_LIST_H_
+#ifndef _KAWAII_MQTT_LIST_H_
+#define _KAWAII_MQTT_LIST_H_
 
 typedef struct mqtt_list_node {
     struct mqtt_list_node *next;

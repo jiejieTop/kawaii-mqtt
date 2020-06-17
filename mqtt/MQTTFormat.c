@@ -114,7 +114,7 @@ int MQTTStringFormat_unsubscribe(char* strbuf, int strbuflen, unsigned char dup,
 }
 
 
-#if defined(MQTT_CLIENT)
+#if defined(KAWAII_MQTT_CLIENT)
 char* MQTTFormat_toClientString(char* strbuf, int strbuflen, unsigned char* buf, int buflen)
 {
 	int index = 0;
@@ -184,7 +184,7 @@ char* MQTTFormat_toClientString(char* strbuf, int strbuflen, unsigned char* buf,
 }
 #endif
 
-#if defined(MQTT_SERVER)
+#if defined(KAWAII_MQTT_SERVER)
 char* MQTTFormat_toServerString(char* strbuf, int strbuflen, unsigned char* buf, int buflen)
 {
 	int index = 0;

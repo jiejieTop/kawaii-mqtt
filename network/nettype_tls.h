@@ -14,7 +14,7 @@
 #include "mqtt_error.h"
 #include "mqtt_log.h"
 
-#ifndef MQTT_NETWORK_TYPE_NO_TLS
+#ifndef KAWAII_MQTT_NETWORK_TYPE_NO_TLS
 
 typedef struct nettype_tls_params {
     mbedtls_net_context         socket_fd;        /**< mbed TLS network context. */
@@ -34,6 +34,6 @@ int nettype_tls_write(network_t *n, unsigned char *buf, int len, int timeout);
 int nettype_tls_connect(network_t* n);
 void nettype_tls_disconnect(network_t* n);
 
-#endif /* MQTT_NETWORK_TYPE_NO_TLS */
+#endif /* KAWAII_MQTT_NETWORK_TYPE_NO_TLS */
 
 #endif

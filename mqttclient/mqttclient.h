@@ -54,7 +54,7 @@ typedef struct mqtt_message {
 } mqtt_message_t;
 
 typedef struct message_data {
-    char                topic_name[MQTT_TOPIC_LEN_MAX];
+    char                topic_name[KAWAII_MQTT_TOPIC_LEN_MAX];
     mqtt_message_t      *message;
 } message_data_t;
 
@@ -126,37 +126,37 @@ typedef struct mqtt_client {
 } mqtt_client_t;
 
 
-#define MQTT_ROBUSTNESS_CHECK(item, err) if (!(item)) {                                         \
-        MQTT_LOG_E("%s:%d %s()... check for error.", __FILE__, __LINE__, __FUNCTION__);         \
+#define KAWAII_MQTT_ROBUSTNESS_CHECK(item, err) if (!(item)) {                                         \
+        KAWAII_MQTT_LOG_E("%s:%d %s()... check for error.", __FILE__, __LINE__, __FUNCTION__);         \
         return err; }
 
-#define MQTT_CLIENT_SET_DEFINE(name, type, res)         \
+#define KAWAII_MQTT_CLIENT_SET_DEFINE(name, type, res)         \
     type mqtt_set_##name(mqtt_client_t *c, type t) {    \
-        MQTT_ROBUSTNESS_CHECK((c), res);                \
+        KAWAII_MQTT_ROBUSTNESS_CHECK((c), res);                \
         c->mqtt_##name = t;                             \
         return c->mqtt_##name;                          \
     }
 
-#define MQTT_CLIENT_SET_STATEMENT(name, type)           \
+#define KAWAII_MQTT_CLIENT_SET_STATEMENT(name, type)           \
     type mqtt_set_##name(mqtt_client_t *, type);
 
-MQTT_CLIENT_SET_STATEMENT(client_id, char*)
-MQTT_CLIENT_SET_STATEMENT(user_name, char*)
-MQTT_CLIENT_SET_STATEMENT(password, char*)
-MQTT_CLIENT_SET_STATEMENT(host, char*)
-MQTT_CLIENT_SET_STATEMENT(port, char*)
-MQTT_CLIENT_SET_STATEMENT(ca, char*)
-MQTT_CLIENT_SET_STATEMENT(reconnect_data, void*)
-MQTT_CLIENT_SET_STATEMENT(keep_alive_interval, uint16_t)
-MQTT_CLIENT_SET_STATEMENT(will_flag, uint32_t)
-MQTT_CLIENT_SET_STATEMENT(clean_session, uint32_t)
-MQTT_CLIENT_SET_STATEMENT(version, uint32_t)
-MQTT_CLIENT_SET_STATEMENT(cmd_timeout, uint32_t)
-MQTT_CLIENT_SET_STATEMENT(read_buf_size, uint32_t)
-MQTT_CLIENT_SET_STATEMENT(write_buf_size, uint32_t)
-MQTT_CLIENT_SET_STATEMENT(reconnect_try_duration, uint32_t)
-MQTT_CLIENT_SET_STATEMENT(reconnect_handler, reconnect_handler_t)
-MQTT_CLIENT_SET_STATEMENT(interceptor_handler, interceptor_handler_t)
+KAWAII_MQTT_CLIENT_SET_STATEMENT(client_id, char*)
+KAWAII_MQTT_CLIENT_SET_STATEMENT(user_name, char*)
+KAWAII_MQTT_CLIENT_SET_STATEMENT(password, char*)
+KAWAII_MQTT_CLIENT_SET_STATEMENT(host, char*)
+KAWAII_MQTT_CLIENT_SET_STATEMENT(port, char*)
+KAWAII_MQTT_CLIENT_SET_STATEMENT(ca, char*)
+KAWAII_MQTT_CLIENT_SET_STATEMENT(reconnect_data, void*)
+KAWAII_MQTT_CLIENT_SET_STATEMENT(keep_alive_interval, uint16_t)
+KAWAII_MQTT_CLIENT_SET_STATEMENT(will_flag, uint32_t)
+KAWAII_MQTT_CLIENT_SET_STATEMENT(clean_session, uint32_t)
+KAWAII_MQTT_CLIENT_SET_STATEMENT(version, uint32_t)
+KAWAII_MQTT_CLIENT_SET_STATEMENT(cmd_timeout, uint32_t)
+KAWAII_MQTT_CLIENT_SET_STATEMENT(read_buf_size, uint32_t)
+KAWAII_MQTT_CLIENT_SET_STATEMENT(write_buf_size, uint32_t)
+KAWAII_MQTT_CLIENT_SET_STATEMENT(reconnect_try_duration, uint32_t)
+KAWAII_MQTT_CLIENT_SET_STATEMENT(reconnect_handler, reconnect_handler_t)
+KAWAII_MQTT_CLIENT_SET_STATEMENT(interceptor_handler, interceptor_handler_t)
 
 void mqtt_sleep_ms(int ms);
 mqtt_client_t *mqtt_lease(void);

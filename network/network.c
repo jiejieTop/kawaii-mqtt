@@ -9,13 +9,13 @@
 #include "platform_memory.h"
 #include "nettype_tcp.h"
 
-#ifndef MQTT_NETWORK_TYPE_NO_TLS
+#ifndef KAWAII_MQTT_NETWORK_TYPE_NO_TLS
 #include "nettype_tls.h"
 #endif
 
 int network_read(network_t *n, unsigned char *buf, int len, int timeout)
 {
-#ifndef MQTT_NETWORK_TYPE_NO_TLS
+#ifndef KAWAII_MQTT_NETWORK_TYPE_NO_TLS
     if (n->channel)
         return nettype_tls_read(n, buf, len, timeout);
 #endif
@@ -24,7 +24,7 @@ int network_read(network_t *n, unsigned char *buf, int len, int timeout)
 
 int network_write(network_t *n, unsigned char *buf, int len, int timeout)
 {
-#ifndef MQTT_NETWORK_TYPE_NO_TLS
+#ifndef KAWAII_MQTT_NETWORK_TYPE_NO_TLS
     if (n->channel)
         return nettype_tls_write(n, buf, len, timeout);
 #endif
@@ -33,7 +33,7 @@ int network_write(network_t *n, unsigned char *buf, int len, int timeout)
 
 int network_connect(network_t *n)
 {
-#ifndef MQTT_NETWORK_TYPE_NO_TLS
+#ifndef KAWAII_MQTT_NETWORK_TYPE_NO_TLS
     if (n->channel)
         return nettype_tls_connect(n);
 #endif
@@ -43,7 +43,7 @@ int network_connect(network_t *n)
 
 void network_disconnect(network_t *n)
 {
-#ifndef MQTT_NETWORK_TYPE_NO_TLS
+#ifndef KAWAII_MQTT_NETWORK_TYPE_NO_TLS
     if (n->channel)
         nettype_tls_disconnect(n);
     else
@@ -54,20 +54,20 @@ void network_disconnect(network_t *n)
 int network_init(network_t *n, const char *host, const char *port, const char *ca)
 {
     if (NULL == n)
-        RETURN_ERROR(MQTT_NULL_VALUE_ERROR);
+        RETURN_ERROR(KAWAII_MQTT_NULL_VALUE_ERROR);
 
     n->socket = -1;
     n->host = host;
     n->port = port;
 
-#ifndef MQTT_NETWORK_TYPE_NO_TLS
+#ifndef KAWAII_MQTT_NETWORK_TYPE_NO_TLS
     n->channel = 0;
 
     if (NULL != ca) {
         network_set_ca(n, ca);
     }
 #endif
-    RETURN_ERROR(MQTT_SUCCESS_ERROR);
+    RETURN_ERROR(KAWAII_MQTT_SUCCESS_ERROR);
 }
 
 void network_release(network_t* n)
@@ -80,33 +80,33 @@ void network_release(network_t* n)
 
 void network_set_channel(network_t *n, int channel)
 {
-#ifndef MQTT_NETWORK_TYPE_NO_TLS
+#ifndef KAWAII_MQTT_NETWORK_TYPE_NO_TLS
     n->channel = channel;
 #endif
 }
 
 int network_set_ca(network_t *n, const char *ca)
 {
-#ifndef MQTT_NETWORK_TYPE_NO_TLS
+#ifndef KAWAII_MQTT_NETWORK_TYPE_NO_TLS
     if ((NULL == n) || (NULL == ca))
-        RETURN_ERROR(MQTT_NULL_VALUE_ERROR);
+        RETURN_ERROR(KAWAII_MQTT_NULL_VALUE_ERROR);
     
     n->ca_crt = ca;
     n->ca_crt_len = strlen(ca);
     n->channel = NETWORK_CHANNEL_TLS;
-    n->timeout_ms = MQTT_TLS_HANDSHAKE_TIMEOUT;
+    n->timeout_ms = KAWAII_MQTT_TLS_HANDSHAKE_TIMEOUT;
 #endif
-    RETURN_ERROR(MQTT_SUCCESS_ERROR);
+    RETURN_ERROR(KAWAII_MQTT_SUCCESS_ERROR);
 }
 
 int network_set_host_port(network_t* n, char *host, char *port)
 {
     if (!(n && host && port))
-        RETURN_ERROR(MQTT_NULL_VALUE_ERROR);
+        RETURN_ERROR(KAWAII_MQTT_NULL_VALUE_ERROR);
 
     n->host = host;
     n->port = port;
 
-    RETURN_ERROR(MQTT_SUCCESS_ERROR);
+    RETURN_ERROR(KAWAII_MQTT_SUCCESS_ERROR);
 }
 

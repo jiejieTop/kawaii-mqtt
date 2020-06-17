@@ -26,8 +26,9 @@ if GetDepend(['KAWAII_MQTT_NETWORK_TYPE_TLS']):
 
 if GetDepend(['KAWAII_MQTT_LOG_IS_SALOF']):
     src += Glob('common/log/*.c')
+    src += Glob('common/log/arch/rt-thread*.c')
     path += [cwd + '/common/log']
-    
+
 if GetDepend(['PKG_USING_KAWAII_MQTT_TEST']):
     src += Glob('test/*.c')
 

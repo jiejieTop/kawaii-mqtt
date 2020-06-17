@@ -24,7 +24,7 @@ int nettype_tcp_connect(network_t* n)
     if (n->socket < 0)
         RETURN_ERROR(n->socket);
     
-    RETURN_ERROR(MQTT_SUCCESS_ERROR);
+    RETURN_ERROR(KAWAII_MQTT_SUCCESS_ERROR);
 }
 
 void nettype_tcp_disconnect(network_t* n)
