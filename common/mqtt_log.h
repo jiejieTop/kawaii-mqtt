@@ -10,15 +10,7 @@
 
 #include "mqtt_defconfig.h"
 
-#define KAWAII_MQTT_LOG_BASE_LEVEL      (0)
-#define KAWAII_MQTT_LOG_ERR_LEVEL       (KAWAII_MQTT_LOG_BASE_LEVEL + 1)
-#define KAWAII_MQTT_LOG_WARN_LEVEL      (KAWAII_MQTT_LOG_ERR_LEVEL + 1)
-#define KAWAII_MQTT_LOG_INFO_LEVEL      (KAWAII_MQTT_LOG_WARN_LEVEL + 1)
-#define KAWAII_MQTT_LOG_DEBUG_LEVEL     (KAWAII_MQTT_LOG_INFO_LEVEL + 1)
-
 #ifdef KAWAII_MQTT_LOG_IS_SALOF
-    #define SALOF_LOG_LEVEL               KAWAII_MQTT_LOG_LEVEL
-    
     #include "salof.h"
 
     #define KAWAII_MQTT_LOG_D(fmt, ...)   SALOF_LOG_DEBUG(fmt, ##__VA_ARGS__)
@@ -29,6 +21,12 @@
 #else
     #include <stdio.h>
     
+    #define KAWAII_MQTT_LOG_BASE_LEVEL      (0)
+    #define KAWAII_MQTT_LOG_ERR_LEVEL       (KAWAII_MQTT_LOG_BASE_LEVEL + 1)
+    #define KAWAII_MQTT_LOG_WARN_LEVEL      (KAWAII_MQTT_LOG_ERR_LEVEL + 1)
+    #define KAWAII_MQTT_LOG_INFO_LEVEL      (KAWAII_MQTT_LOG_WARN_LEVEL + 1)
+    #define KAWAII_MQTT_LOG_DEBUG_LEVEL     (KAWAII_MQTT_LOG_INFO_LEVEL + 1)
+
 #if KAWAII_MQTT_LOG_LEVEL < KAWAII_MQTT_LOG_DEBUG_LEVEL
     #define KAWAII_MQTT_LOG_D(fmt, ...)
 #else
