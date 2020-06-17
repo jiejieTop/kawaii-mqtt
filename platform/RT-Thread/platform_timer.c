@@ -55,5 +55,12 @@ unsigned long platform_timer_now(void)
 
 void platform_timer_usleep(unsigned long usec)
 {
-    rt_thread_mdelay(usec);
+    uint32_t ms = 0;
+    if(usec != 0) {
+        ms = usec / 1000;
+        if (ms == 0) {
+            ms = 1;
+        }
+    }
+    rt_thread_mdelay(ms);
 }
