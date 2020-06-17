@@ -5,8 +5,8 @@
  * @LastEditTime: 2020-04-27 23:35:05
  * @Description: the code belongs to jiejie, please keep the author information and source code according to the license.
  */
-#ifndef _KAWAII_MQTT_ERROR_H_
-#define _KAWAII_MQTT_ERROR_H_
+#ifndef _MQTT_ERROR_H_
+#define _MQTT_ERROR_H_
 
 typedef enum mqtt_error {
     KAWAII_MQTT_SSL_CERT_ERROR                                     = -0x001C,      /* cetr parse failed */

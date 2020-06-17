@@ -5,7 +5,7 @@
  * @LastEditTime : 2019-12-28 01:51:38
  * @Description: the code belongs to jiejie, please keep the author information and source code according to the license.
  */
-#include "config.h"
+#include "salof_defconfig.h"
 
 #ifdef SALOF_USING_LOG
 

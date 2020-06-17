@@ -35,7 +35,7 @@ void salof(const char *fmt, ...);
 
 #endif
 
-#if SALOF_LOG_COLOR
+#ifdef SALOF_LOG_COLOR
     #define SALOF_LOG_START(l, c)     SALOF_PRINT_LOG("\033\n["#c"m["#l"] >> ")
     #define SALOF_LOG_END             SALOF_PRINT_LOG("\033[0m")  
 #else
@@ -43,11 +43,11 @@ void salof(const char *fmt, ...);
     #define SALOF_LOG_END       
 #endif
 
-#if SALOF_LOG_TS && SALOF_LOG_TAR
+#if ((defined SALOF_LOG_TS) && (defined SALOF_LOG_TAR))
     #define SALOF_LOG_T           SALOF_PRINT_LOG("[TS: %d] [TAR: %s] ",salof_get_tick(), salof_get_task_name())
-#elif SALOF_LOG_TS
+#elif (defined SALOF_LOG_TS)
     #define SALOF_LOG_T           SALOF_PRINT_LOG("[TS: %d] ", salof_get_tick())
-#elif SALOF_LOG_TAR
+#elif (defined SALOF_LOG_TAR)
     #define SALOF_LOG_T           SALOF_PRINT_LOG("[TAR: %s] ", salof_get_task_name())
 #else
     #define SALOF_LOG_T
