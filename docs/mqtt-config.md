@@ -97,12 +97,12 @@
         #define     KAWAII_MQTT_THREAD_TICK                    50      // 线程时间片
     ```
 
-- KAWAII_MQTT_NETWORK_TYPE_NO_TLS
+- KAWAII_MQTT_NETWORK_TYPE_TLS
 
-    设置是否需要支持TLS加密传输，如果定义了该宏，则表示不支持TLS加密传输，否则默认将支持TLS加密传输。
+    设置是否需要支持TLS加密传输，如果定义了该宏，则表示支持TLS加密传输，否则默认将不支持TLS加密传输。
 
     ```c
-        #define     KAWAII_MQTT_NETWORK_TYPE_NO_TLS
+        #define     KAWAII_MQTT_NETWORK_TYPE_TLS
     ```
 
 # salof相关的配置

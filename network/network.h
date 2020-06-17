@@ -17,7 +17,7 @@ typedef struct network {
     const char                  *host;
     const char                  *port;
     int                         socket;
-#ifndef KAWAII_MQTT_NETWORK_TYPE_NO_TLS
+#ifdef KAWAII_MQTT_NETWORK_TYPE_TLS
     int                         channel;        /* tcp or tls */
     const char                  *ca_crt;
     unsigned int                ca_crt_len;

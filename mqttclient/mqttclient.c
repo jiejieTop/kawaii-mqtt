@@ -957,7 +957,7 @@ static int mqtt_connect_with_results(mqtt_client_t* c)
         RETURN_ERROR(KAWAII_MQTT_MEM_NOT_ENOUGH_ERROR);
     }
 
-#ifndef KAWAII_MQTT_NETWORK_TYPE_NO_TLS
+#ifdef KAWAII_MQTT_NETWORK_TYPE_TLS
     rc = network_init(c->mqtt_network, c->mqtt_host, c->mqtt_port, c->mqtt_ca);
 #else
     rc = network_init(c->mqtt_network, c->mqtt_host, c->mqtt_port, NULL);

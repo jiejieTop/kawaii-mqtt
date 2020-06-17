@@ -64,7 +64,7 @@
 #endif // !KAWAII_MQTT_THREAD_TICK
 
 
-#ifndef KAWAII_MQTT_NETWORK_TYPE_NO_TLS
+#ifdef KAWAII_MQTT_NETWORK_TYPE_TLS
 
 #ifndef KAWAII_MQTT_TLS_HANDSHAKE_TIMEOUT
     #define KAWAII_MQTT_TLS_HANDSHAKE_TIMEOUT  (5 * 1000)
@@ -77,6 +77,6 @@
     #include "mbedtls/ctr_drbg.h"
     #include "mbedtls/error.h"
     #include "mbedtls/debug.h"
-#endif /* KAWAII_MQTT_NETWORK_TYPE_NO_TLS */
+#endif /* KAWAII_MQTT_NETWORK_TYPE_TLS */
 
 #endif /* _DEFCONFIG_H_ */

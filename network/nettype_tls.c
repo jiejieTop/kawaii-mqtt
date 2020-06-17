@@ -11,7 +11,7 @@
 #include "platform_timer.h"
 #include "random.h"
 
-#ifndef KAWAII_MQTT_NETWORK_TYPE_NO_TLS
+#ifdef KAWAII_MQTT_NETWORK_TYPE_TLS
 
 #include "mbedtls/platform.h"
 #include "mbedtls/ssl.h"
@@ -252,4 +252,4 @@ int nettype_tls_read(network_t *n, unsigned char *buf, int len, int timeout)
     return read_len;
 }
 
-#endif /* KAWAII_MQTT_NETWORK_TYPE_NO_TLS */
+#endif /* KAWAII_MQTT_NETWORK_TYPE_TLS */

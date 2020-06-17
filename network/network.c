@@ -9,13 +9,13 @@
 #include "platform_memory.h"
 #include "nettype_tcp.h"
 
-#ifndef KAWAII_MQTT_NETWORK_TYPE_NO_TLS
+#ifdef KAWAII_MQTT_NETWORK_TYPE_TLS
 #include "nettype_tls.h"
 #endif
 
 int network_read(network_t *n, unsigned char *buf, int len, int timeout)
 {
-#ifndef KAWAII_MQTT_NETWORK_TYPE_NO_TLS
+#ifdef KAWAII_MQTT_NETWORK_TYPE_TLS
     if (n->channel)
         return nettype_tls_read(n, buf, len, timeout);
 #endif
@@ -24,7 +24,7 @@ int network_read(network_t *n, unsigned char *buf, int len, int timeout)
 
 int network_write(network_t *n, unsigned char *buf, int len, int timeout)
 {
-#ifndef KAWAII_MQTT_NETWORK_TYPE_NO_TLS
+#ifdef KAWAII_MQTT_NETWORK_TYPE_TLS
     if (n->channel)
         return nettype_tls_write(n, buf, len, timeout);
 #endif
@@ -33,7 +33,7 @@ int network_write(network_t *n, unsigned char *buf, int len, int timeout)
 
 int network_connect(network_t *n)
 {
-#ifndef KAWAII_MQTT_NETWORK_TYPE_NO_TLS
+#ifdef KAWAII_MQTT_NETWORK_TYPE_TLS
     if (n->channel)
         return nettype_tls_connect(n);
 #endif
@@ -43,7 +43,7 @@ int network_connect(network_t *n)
 
 void network_disconnect(network_t *n)
 {
-#ifndef KAWAII_MQTT_NETWORK_TYPE_NO_TLS
+#ifdef KAWAII_MQTT_NETWORK_TYPE_TLS
     if (n->channel)
         nettype_tls_disconnect(n);
     else
@@ -60,7 +60,7 @@ int network_init(network_t *n, const char *host, const char *port, const char *c
     n->host = host;
     n->port = port;
 
-#ifndef KAWAII_MQTT_NETWORK_TYPE_NO_TLS
+#ifdef KAWAII_MQTT_NETWORK_TYPE_TLS
     n->channel = 0;
 
     if (NULL != ca) {
@@ -80,14 +80,14 @@ void network_release(network_t* n)
 
 void network_set_channel(network_t *n, int channel)
 {
-#ifndef KAWAII_MQTT_NETWORK_TYPE_NO_TLS
+#ifdef KAWAII_MQTT_NETWORK_TYPE_TLS
     n->channel = channel;
 #endif
 }
 
 int network_set_ca(network_t *n, const char *ca)
 {
-#ifndef KAWAII_MQTT_NETWORK_TYPE_NO_TLS
+#ifdef KAWAII_MQTT_NETWORK_TYPE_TLS
     if ((NULL == n) || (NULL == ca))
         RETURN_ERROR(KAWAII_MQTT_NULL_VALUE_ERROR);
     
