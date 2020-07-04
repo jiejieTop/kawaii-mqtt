@@ -118,7 +118,6 @@ typedef struct mqtt_client {
     mqtt_list_t                 mqtt_ack_handler_list;
     network_t                   *mqtt_network;
     platform_thread_t           *mqtt_thread;
-    platform_timer_t            mqtt_reconnect_timer;
     platform_timer_t            mqtt_last_sent;
     platform_timer_t            mqtt_last_received;
     reconnect_handler_t         mqtt_reconnect_handler;

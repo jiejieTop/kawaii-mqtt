@@ -67,16 +67,15 @@ static int mqtt_ack_handler_is_maximum(mqtt_client_t* c)
 }
 
 static void mqtt_add_ack_handler_num(mqtt_client_t* c)
-{
-    platform_mutex_lock(&c->mqtt_global_lock);
+{    
     c->mqtt_ack_handler_number++;
-    platform_mutex_unlock(&c->mqtt_global_lock);
+
 }
 
 static int mqtt_subtract_ack_handler_num(mqtt_client_t* c)
 {
     int rc = KAWAII_MQTT_SUCCESS_ERROR;
-    platform_mutex_lock(&c->mqtt_global_lock);
+    
     if (c->mqtt_ack_handler_number <= 0) {
         goto exit;
     }
@@ -84,7 +83,6 @@ static int mqtt_subtract_ack_handler_num(mqtt_client_t* c)
     c->mqtt_ack_handler_number--;
     
 exit:
-    platform_mutex_unlock(&c->mqtt_global_lock);
     RETURN_ERROR(rc);
 }
 
@@ -154,7 +152,7 @@ static int mqtt_read_packet(mqtt_client_t* c, int* packet_type, platform_timer_t
     if (NULL == packet_type)
         RETURN_ERROR(KAWAII_MQTT_NULL_VALUE_ERROR);
 
-    platform_timer_init(timer);
+    
     platform_timer_cutdown(timer, c->mqtt_cmd_timeout);
 
     /* 1. read the header byte.  This has the packet type in it */
@@ -193,7 +191,7 @@ static int mqtt_send_packet(mqtt_client_t* c, int length, platform_timer_t* time
     int len = 0;
     int sent = 0;
 
-    platform_timer_init(timer);
+    
     platform_timer_cutdown(timer, c->mqtt_cmd_timeout);
 
     /* send mqtt packet in a blocking manner or exit when it timer is expired */
@@ -303,8 +301,9 @@ static int mqtt_deliver_message(mqtt_client_t* c, MQTTString* topic_name, mqtt_m
         c->mqtt_interceptor_handler(c, &md);
         rc = KAWAII_MQTT_SUCCESS_ERROR;
     }
-    
-    memset(message->payload, 0, strlen(message->payload));
+
+     /*payload may not be string, so use meessage->payloadlen memeset zhaoshimin 20200629*/
+    memset(message->payload, 0, message->payloadlen);
     memset(topic_name->lenstring.data, 0, topic_name->lenstring.len);
 
     RETURN_ERROR(rc);
@@ -319,7 +318,7 @@ static ack_handlers_t *mqtt_ack_handler_create(mqtt_client_t* c, int type, uint1
         return NULL;
 
     mqtt_list_init(&ack_handler->list);
-    platform_timer_init(&ack_handler->timer);
+    
     platform_timer_cutdown(&ack_handler->timer, c->mqtt_cmd_timeout);    /* No response within timeout will be destroyed or resent */
 
     ack_handler->type = type;
@@ -343,7 +342,7 @@ static void mqtt_ack_handler_destroy(ack_handlers_t* ack_handler)
 static void mqtt_ack_handler_resend(mqtt_client_t* c, ack_handlers_t* ack_handler)
 { 
     platform_timer_t timer;
-    platform_timer_init(&timer);
+    
     platform_timer_cutdown(&timer, c->mqtt_cmd_timeout);
     platform_timer_cutdown(&ack_handler->timer, c->mqtt_cmd_timeout); /* timeout, recutdown */
 
@@ -351,8 +350,9 @@ static void mqtt_ack_handler_resend(mqtt_client_t* c, ack_handlers_t* ack_handle
     memcpy(c->mqtt_write_buf, ack_handler->payload, ack_handler->payload_len);   /* copy data to write buf form ack handler */
     
     mqtt_send_packet(c, ack_handler->payload_len, &timer);      /* resend data */
-    KAWAII_MQTT_LOG_W("%s:%d %s()... resend %d package, packet_id is %d ", __FILE__, __LINE__, __FUNCTION__, ack_handler->type, ack_handler->packet_id);
     platform_mutex_unlock(&c->mqtt_write_lock);
+    KAWAII_MQTT_LOG_W("%s:%d %s()... resend %d package, packet_id is %d ", __FILE__, __LINE__, __FUNCTION__, ack_handler->type, ack_handler->packet_id);
+    
 }
 
 static int mqtt_ack_list_node_is_exist(mqtt_client_t* c, int type, uint16_t packet_id)
@@ -540,7 +540,15 @@ static void mqtt_ack_list_scan(mqtt_client_t* c, uint8_t flag)
             continue;
         }
         /* if it is not a qos1 or qos2 message, it will be destroyed in every processing */
-        mqtt_ack_handler_destroy(ack_handler);
+
+        if(flag)
+        {
+            /*when flag == 0, rconnet the broker, resubscribe creat the type SUBACK ack_handler_list, it not been destroyed zhaoshimin 20200629*/
+            platform_mutex_lock(&c->mqtt_write_lock);
+            mqtt_ack_handler_destroy(ack_handler);
+            mqtt_subtract_ack_handler_num(c);
+            platform_mutex_unlock(&c->mqtt_write_lock);
+        }    
     }
 }
 
@@ -589,16 +597,22 @@ static int mqtt_try_reconnect(mqtt_client_t* c)
 {
     int rc = KAWAII_MQTT_SUCCESS_ERROR;
 
+    /*before connect, call reconnect handler, it can used to update the mqtt password, eg: onenet platform need*/
+    if (NULL != c->mqtt_reconnect_handler) {
+        c->mqtt_reconnect_handler(c, c->mqtt_reconnect_data);
+    }        
+
     rc = mqtt_try_do_reconnect(c);
 
-    if ((KAWAII_MQTT_SUCCESS_ERROR != rc) && (platform_timer_is_expired(&c->mqtt_reconnect_timer))) {
-        platform_timer_cutdown(&c->mqtt_reconnect_timer, c->mqtt_reconnect_try_duration);
-        if (NULL != c->mqtt_reconnect_handler)
-            c->mqtt_reconnect_handler(c, c->mqtt_reconnect_data);
-        RETURN_ERROR(KAWAII_MQTT_RECONNECT_TIMEOUT_ERROR);
-    } 
-    
-    RETURN_ERROR(rc);
+    if(KAWAII_MQTT_SUCCESS_ERROR != rc) {
+        /*connect fail must delay reconnect try duration time and let cpu time go out, the lowest priority task can run */
+        mqtt_sleep_ms(c->mqtt_reconnect_try_duration);  
+        RETURN_ERROR(KAWAII_MQTT_RECONNECT_TIMEOUT_ERROR);    
+    }
+    else {
+        RETURN_ERROR(rc);    
+    }
+
 }
 
 static int mqtt_publish_ack_packet(mqtt_client_t *c, uint16_t packet_id, int packet_type)
@@ -606,9 +620,7 @@ static int mqtt_publish_ack_packet(mqtt_client_t *c, uint16_t packet_id, int pac
     int len = 0;
     int rc = KAWAII_MQTT_SUCCESS_ERROR;
     platform_timer_t timer;
-    platform_timer_init(&timer);
-    platform_timer_cutdown(&timer, c->mqtt_cmd_timeout);
-
+    
     platform_mutex_lock(&c->mqtt_write_lock);
 
     switch (packet_type) {
@@ -655,7 +667,9 @@ static int mqtt_puback_and_pubcomp_packet_handle(mqtt_client_t *c, platform_time
         rc = KAWAII_MQTT_PUBREC_PACKET_ERROR;
     
     (void) dup;
+    platform_mutex_lock(&c->mqtt_write_lock);
     rc = mqtt_ack_list_unrecord(c, packet_type, packet_id, NULL);   /* unrecord ack handler */
+    platform_mutex_unlock(&c->mqtt_write_lock);
 
     RETURN_ERROR(rc);
 }
@@ -678,20 +692,27 @@ static int mqtt_suback_packet_handle(mqtt_client_t *c, platform_timer_t *timer)
         RETURN_ERROR(KAWAII_MQTT_SUBSCRIBE_ACK_PACKET_ERROR);
 
     is_nack = (granted_qos == SUBFAIL);
-    
+
+    platform_mutex_lock(&c->mqtt_write_lock);
     rc = mqtt_ack_list_unrecord(c, SUBACK, packet_id, &msg_handler);
     
     if (!msg_handler)
-        RETURN_ERROR(KAWAII_MQTT_MEM_NOT_ENOUGH_ERROR);
+    {
+        rc = KAWAII_MQTT_MEM_NOT_ENOUGH_ERROR;
+        goto exit;
+    }
     
     if (is_nack) {
         mqtt_msg_handler_destory(msg_handler);  /* subscribe topic failed, destory message handler */
-        KAWAII_MQTT_LOG_D("subscribe topic failed...");
-        RETURN_ERROR(KAWAII_MQTT_SUBSCRIBE_NOT_ACK_ERROR);
+        KAWAII_MQTT_LOG_W("subscribe topic failed...");
+        
+        rc = KAWAII_MQTT_SUBSCRIBE_NOT_ACK_ERROR;
+        goto exit;
     }
     
     rc = mqtt_msg_handlers_install(c, msg_handler);
-    
+exit:    
+    platform_mutex_unlock(&c->mqtt_write_lock);
     RETURN_ERROR(rc);
 }
 
@@ -707,14 +728,19 @@ static int mqtt_unsuback_packet_handle(mqtt_client_t *c, platform_timer_t *timer
 
     if (MQTTDeserialize_unsuback(&packet_id, c->mqtt_read_buf, c->mqtt_read_buf_size) != 1)
         RETURN_ERROR(KAWAII_MQTT_UNSUBSCRIBE_ACK_PACKET_ERROR);
-
+        
+    platform_mutex_lock(&c->mqtt_write_lock);
     rc = mqtt_ack_list_unrecord(c, UNSUBACK, packet_id, &msg_handler);  /* unrecord ack handler, and get message handler */
     
     if (!msg_handler)
-        RETURN_ERROR(KAWAII_MQTT_MEM_NOT_ENOUGH_ERROR);
-    
+    {
+        rc = KAWAII_MQTT_MEM_NOT_ENOUGH_ERROR;
+        goto exit;
+    }    
     mqtt_msg_handler_destory(msg_handler);  /* destory message handler */
-
+    
+exit:    
+    platform_mutex_unlock(&c->mqtt_write_lock);
     RETURN_ERROR(rc);
 }
 
@@ -756,12 +782,18 @@ static int mqtt_publish_packet_handle(mqtt_client_t *c, platform_timer_t *timer)
     if (rc < 0)
         RETURN_ERROR(rc);
 
-    if (msg.qos != QOS2)
+    if (msg.qos != QOS2) {
         mqtt_deliver_message(c, &topic_name, &msg);
+    }    
     else {
         /* record the received of a qos2 message and only processes it when the qos2 message is received for the first time */
-        if ((rc = mqtt_ack_list_record(c, PUBREL, msg.id, len, NULL)) != KAWAII_MQTT_ACK_NODE_IS_EXIST_ERROR)
+        platform_mutex_lock(&c->mqtt_write_lock);
+        rc = mqtt_ack_list_record(c, PUBREL, msg.id, len, NULL);
+        platform_mutex_unlock(&c->mqtt_write_lock);
+        
+        if (rc != KAWAII_MQTT_ACK_NODE_IS_EXIST_ERROR) {
             mqtt_deliver_message(c, &topic_name, &msg);
+        }    
     }
     
     RETURN_ERROR(rc);
@@ -783,7 +815,10 @@ static int mqtt_pubrec_and_pubrel_packet_handle(mqtt_client_t *c, platform_timer
 
     (void) dup;
     rc = mqtt_publish_ack_packet(c, packet_id, packet_type);    /* make a ack packet and send it */
+    
+    platform_mutex_lock(&c->mqtt_write_lock);
     rc = mqtt_ack_list_unrecord(c, packet_type, packet_id, NULL);
+    platform_mutex_unlock(&c->mqtt_write_lock);
 
     RETURN_ERROR(rc);
 }
@@ -829,7 +864,7 @@ static int mqtt_packet_handle(mqtt_client_t* c, platform_timer_t* timer)
             break;
 
         default:
-            goto exit;
+            break;
     }
 
     rc = mqtt_keep_alive(c);
@@ -866,7 +901,7 @@ static int mqtt_yield(mqtt_client_t* c, int timeout_ms)
     if (0 == timeout_ms)
         timeout_ms = c->mqtt_cmd_timeout;
 
-    platform_timer_init(&timer);
+
     platform_timer_cutdown(&timer, timeout_ms);
     
     while (!platform_timer_is_expired(&timer)) {
@@ -876,9 +911,11 @@ static int mqtt_yield(mqtt_client_t* c, int timeout_ms)
         } else if (CLIENT_STATE_CONNECTED != state) {
             /* mqtt not connect, need reconnect */
             rc = mqtt_try_reconnect(c);
-
+ 
             if (KAWAII_MQTT_RECONNECT_TIMEOUT_ERROR == rc)
+            {
                 RETURN_ERROR(rc);
+            }    
             continue;
         }
         
@@ -891,9 +928,7 @@ static int mqtt_yield(mqtt_client_t* c, int timeout_ms)
 
         } else if (KAWAII_MQTT_NOT_CONNECT_ERROR == rc) {
             KAWAII_MQTT_LOG_E("%s:%d %s()... mqtt not connect", __FILE__, __LINE__, __FUNCTION__);
-            
-            /* reconnect timer cutdown */
-            platform_timer_cutdown(&c->mqtt_reconnect_timer, c->mqtt_reconnect_try_duration);
+
         } else {
             break;
         }
@@ -905,14 +940,9 @@ static int mqtt_yield(mqtt_client_t* c, int timeout_ms)
 static void mqtt_yield_thread(void *arg)
 {
     int rc;
-    client_state_t state;
+    
     mqtt_client_t *c = (mqtt_client_t *)arg;
 
-    state = mqtt_get_client_state(c);
-        if (CLIENT_STATE_CONNECTED !=  state) {
-            KAWAII_MQTT_LOG_W("%s:%d %s()..., mqtt is not connected to the server...",  __FILE__, __LINE__, __FUNCTION__);
-            platform_thread_stop(c->mqtt_thread);    /* mqtt is not connected to the server, stop thread */
-    }
 
     while (1) {
         rc = mqtt_yield(c, c->mqtt_cmd_timeout);
@@ -920,14 +950,14 @@ static void mqtt_yield_thread(void *arg)
             KAWAII_MQTT_LOG_E("%s:%d %s()..., mqtt clean session....", __FILE__, __LINE__, __FUNCTION__);
             network_disconnect(c->mqtt_network);
             mqtt_clean_session(c);
-            goto exit;
+            break;
         } else if (KAWAII_MQTT_RECONNECT_TIMEOUT_ERROR == rc) {
             KAWAII_MQTT_LOG_E("%s:%d %s()..., mqtt reconnect timeout....", __FILE__, __LINE__, __FUNCTION__);
         }
     }
-    
-exit:
+    /*let the rtos recycles thread resources zhaoshimin 20200629*/
     platform_thread_destroy(c->mqtt_thread);
+   
 }
 
 static int mqtt_connect_with_results(mqtt_client_t* c)
@@ -944,18 +974,6 @@ static int mqtt_connect_with_results(mqtt_client_t* c)
     if (CLIENT_STATE_CONNECTED == mqtt_get_client_state(c))
         RETURN_ERROR(KAWAII_MQTT_SUCCESS_ERROR);
 
-    if ((KAWAII_MQTT_MIN_PAYLOAD_SIZE >= c->mqtt_read_buf_size) || (KAWAII_MQTT_MAX_PAYLOAD_SIZE <= c->mqtt_read_buf_size))
-        c->mqtt_read_buf_size = KAWAII_MQTT_DEFAULT_BUF_SIZE;
-    if ((KAWAII_MQTT_MIN_PAYLOAD_SIZE >= c->mqtt_write_buf_size) || (KAWAII_MQTT_MAX_PAYLOAD_SIZE <= c->mqtt_write_buf_size))
-        c->mqtt_write_buf_size = KAWAII_MQTT_DEFAULT_BUF_SIZE;
-    
-    c->mqtt_read_buf = (uint8_t*) platform_memory_alloc(c->mqtt_write_buf_size);
-    c->mqtt_write_buf = (uint8_t*) platform_memory_alloc(c->mqtt_write_buf_size);
-    
-    if ((NULL == c->mqtt_read_buf) || (NULL == c->mqtt_write_buf)) {
-        KAWAII_MQTT_LOG_E("%s:%d %s()... malloc buf failed...", __FILE__, __LINE__, __FUNCTION__);
-        RETURN_ERROR(KAWAII_MQTT_MEM_NOT_ENOUGH_ERROR);
-    }
 
 #ifdef KAWAII_MQTT_NETWORK_TYPE_TLS
     rc = network_init(c->mqtt_network, c->mqtt_host, c->mqtt_port, c->mqtt_ca);
@@ -965,12 +983,9 @@ static int mqtt_connect_with_results(mqtt_client_t* c)
 
     rc = network_connect(c->mqtt_network);
     if (KAWAII_MQTT_SUCCESS_ERROR != rc) {
-        if (NULL != c->mqtt_network) {
-            network_release(c->mqtt_network);
-            platform_memory_free(c->mqtt_network);
-            c->mqtt_network = NULL;
-            RETURN_ERROR(rc);
-        }  
+        /*when connect faile, you should call network_release to release socket file descriptor zhaoshimin 20200629*/
+        network_release(c->mqtt_network);
+        RETURN_ERROR(rc); 
     }
     
     KAWAII_MQTT_LOG_I("%s:%d %s()... mqtt connect success...", __FILE__, __LINE__, __FUNCTION__);
@@ -998,7 +1013,7 @@ static int mqtt_connect_with_results(mqtt_client_t* c)
     if ((len = MQTTSerialize_connect(c->mqtt_write_buf, c->mqtt_write_buf_size, &connect_data)) <= 0)
         goto exit;
         
-    platform_timer_init(&connect_timer);
+    
     platform_timer_cutdown(&connect_timer, c->mqtt_cmd_timeout);
 
     /* send connect packet */
@@ -1017,13 +1032,20 @@ exit:
     if (rc == KAWAII_MQTT_SUCCESS_ERROR) {
         if(NULL == c->mqtt_thread) {
 
-            /* connect success, and need init mqtt thread */
-            c->mqtt_thread= platform_thread_init("mqtt_yield_thread", mqtt_yield_thread, c, KAWAII_MQTT_THREAD_STACK_SIZE, KAWAII_MQTT_THREAD_PRIO, KAWAII_MQTT_THREAD_TICK);
+            /* connect success, and need init mqtt thread, rt thread thread name max len is 8*/
+            c->mqtt_thread = platform_thread_init("mqtt", mqtt_yield_thread, c, KAWAII_MQTT_THREAD_STACK_SIZE, KAWAII_MQTT_THREAD_PRIO, KAWAII_MQTT_THREAD_TICK);
 
             if (NULL != c->mqtt_thread) {
                 mqtt_set_client_state(c, CLIENT_STATE_CONNECTED);
-                platform_thread_startup(c->mqtt_thread);
-                platform_thread_start(c->mqtt_thread);       /* start run mqtt thread */
+                platform_thread_startup(c->mqtt_thread);   /* start run mqtt thread */
+                      
+            }
+            else
+            {
+                /*creat the thread fail and disconnect the mqtt socket connect*/
+                network_release(c->mqtt_network);
+                rc = KAWAII_MQTT_CONNECT_FAILED_ERROR;
+                KAWAII_MQTT_LOG_W("%s:%d %s()... mqtt yield thread creat faile...", __FILE__, __LINE__, __FUNCTION__);    
             }
         } else {
             mqtt_set_client_state(c, CLIENT_STATE_CONNECTED);   /* reconnect, mqtt thread is already exists */
@@ -1071,13 +1093,27 @@ static int mqtt_init(mqtt_client_t* c)
     c->mqtt_reconnect_handler = NULL;
     c->mqtt_interceptor_handler = NULL;
 
+    /*only malloc write buf and read buf when call mqtt_init function */
+    if ((KAWAII_MQTT_MIN_PAYLOAD_SIZE >= c->mqtt_read_buf_size) || (KAWAII_MQTT_MAX_PAYLOAD_SIZE <= c->mqtt_read_buf_size))
+        c->mqtt_read_buf_size = KAWAII_MQTT_DEFAULT_BUF_SIZE;
+    if ((KAWAII_MQTT_MIN_PAYLOAD_SIZE >= c->mqtt_write_buf_size) || (KAWAII_MQTT_MAX_PAYLOAD_SIZE <= c->mqtt_write_buf_size))
+        c->mqtt_write_buf_size = KAWAII_MQTT_DEFAULT_BUF_SIZE;
+    
+    c->mqtt_read_buf = (uint8_t*) platform_memory_alloc(c->mqtt_write_buf_size);
+    c->mqtt_write_buf = (uint8_t*) platform_memory_alloc(c->mqtt_write_buf_size);
+    
+    if ((NULL == c->mqtt_read_buf) || (NULL == c->mqtt_write_buf)) {
+        KAWAII_MQTT_LOG_E("%s:%d %s()... malloc buf failed...", __FILE__, __LINE__, __FUNCTION__);
+        RETURN_ERROR(KAWAII_MQTT_MEM_NOT_ENOUGH_ERROR);
+    }
+
     mqtt_list_init(&c->mqtt_msg_handler_list);
     mqtt_list_init(&c->mqtt_ack_handler_list);
     
     platform_mutex_init(&c->mqtt_write_lock);
     platform_mutex_init(&c->mqtt_global_lock);
 
-    platform_timer_init(&c->mqtt_reconnect_timer);
+
     platform_timer_init(&c->mqtt_last_sent);
     platform_timer_init(&c->mqtt_last_received);
 
@@ -1120,13 +1156,24 @@ int mqtt_keep_alive(mqtt_client_t* c)
     if (platform_timer_is_expired(&c->mqtt_last_sent) || platform_timer_is_expired(&c->mqtt_last_received)) {
         if (c->mqtt_ping_outstanding) {
             KAWAII_MQTT_LOG_W("%s:%d %s()... ping outstanding", __FILE__, __LINE__, __FUNCTION__);
+            /*must realse the socket file descriptor zhaoshimin 20200629*/
+            network_release(c->mqtt_network);
+            
             mqtt_set_client_state(c, CLIENT_STATE_DISCONNECTED);
             rc = KAWAII_MQTT_NOT_CONNECT_ERROR; /* PINGRESP not received in keepalive interval */
         } else {
             platform_timer_t timer;
+
+            /*add mutex sem protect zhaoshimin 20200630*/
+            platform_mutex_lock(&c->mqtt_write_lock);
             int len = MQTTSerialize_pingreq(c->mqtt_write_buf, c->mqtt_write_buf_size);
-            if (len > 0 && (rc = mqtt_send_packet(c, len, &timer)) == KAWAII_MQTT_SUCCESS_ERROR) // send the ping packet
+            if (len > 0) // send the ping packet
+            {
+                /*when the socket error, mqtt_ping_outstanding counter must add one*/
+                rc = mqtt_send_packet(c, len, &timer);
                 c->mqtt_ping_outstanding++;
+            } 
+            platform_mutex_unlock(&c->mqtt_write_lock);
         }
     }
 
@@ -1158,7 +1205,7 @@ int mqtt_release(mqtt_client_t* c)
     if (NULL == c)
         RETURN_ERROR(KAWAII_MQTT_NULL_VALUE_ERROR);
 
-    platform_timer_init(&timer);
+    
     platform_timer_cutdown(&timer, c->mqtt_cmd_timeout);
     
     /* wait for the clean session to complete */
@@ -1202,7 +1249,7 @@ int mqtt_disconnect(mqtt_client_t* c)
     platform_timer_t timer;
     int len = 0;
 
-    platform_timer_init(&timer);
+    
     platform_timer_cutdown(&timer, c->mqtt_cmd_timeout);
 
     platform_mutex_lock(&c->mqtt_write_lock);
@@ -1231,10 +1278,10 @@ int mqtt_subscribe(mqtt_client_t* c, const char* topic_filter, mqtt_qos_t qos, m
 
     if (CLIENT_STATE_CONNECTED != mqtt_get_client_state(c))
         RETURN_ERROR(KAWAII_MQTT_NOT_CONNECT_ERROR);
+        
+    packet_id = mqtt_get_next_packet_id(c);
     
     platform_mutex_lock(&c->mqtt_write_lock);
-
-    packet_id = mqtt_get_next_packet_id(c);
 
     /* serialize subscribe packet and send it */
     len = MQTTSerialize_subscribe(c->mqtt_write_buf, c->mqtt_write_buf_size, 0, packet_id, 1, &topic, (int*)&qos);
@@ -1249,8 +1296,10 @@ int mqtt_subscribe(mqtt_client_t* c, const char* topic_filter, mqtt_qos_t qos, m
 
     /* create a message and record it */
     msg_handler = mqtt_msg_handler_create(topic_filter, qos, handler);
-    if (NULL == msg_handler)
-        RETURN_ERROR(KAWAII_MQTT_MEM_NOT_ENOUGH_ERROR);
+    if (NULL == msg_handler) {
+        rc = KAWAII_MQTT_MEM_NOT_ENOUGH_ERROR;
+        goto exit;
+    }    
 
     rc = mqtt_ack_list_record(c, SUBACK, packet_id, len, msg_handler);
 
@@ -1274,10 +1323,10 @@ int mqtt_unsubscribe(mqtt_client_t* c, const char* topic_filter)
     if (CLIENT_STATE_CONNECTED != mqtt_get_client_state(c))
         RETURN_ERROR(KAWAII_MQTT_NOT_CONNECT_ERROR);
     
-    platform_mutex_lock(&c->mqtt_write_lock);
 
     packet_id = mqtt_get_next_packet_id(c);
-    
+
+    platform_mutex_lock(&c->mqtt_write_lock);
     /* serialize unsubscribe packet and send it */
     if ((len = MQTTSerialize_unsubscribe(c->mqtt_write_buf, c->mqtt_write_buf_size, 0, packet_id, 1, &topic)) <= 0)
         goto exit;
@@ -1286,8 +1335,10 @@ int mqtt_unsubscribe(mqtt_client_t* c, const char* topic_filter)
 
     /* create a message and record it */
     msg_handler = mqtt_msg_handler_create((const char*)topic_filter, QOS0, NULL);
-    if (NULL == msg_handler)
-        RETURN_ERROR(KAWAII_MQTT_MEM_NOT_ENOUGH_ERROR);
+    if (NULL == msg_handler) {
+        rc = KAWAII_MQTT_MEM_NOT_ENOUGH_ERROR;
+        goto exit;
+    }    
 
     rc = mqtt_ack_list_record(c, UNSUBACK, packet_id, len, msg_handler);
 
@@ -1334,7 +1385,7 @@ int mqtt_publish(mqtt_client_t* c, const char* topic_filter, mqtt_message_t* msg
         goto exit;
     
     if (QOS0 != msg->qos) {
-        mqtt_set_publish_dup(c,1);  /* may resend this data, set the udp flag in advance */
+        mqtt_set_publish_dup(c,1);  /* may resend this data, set the dup flag in advance */
         
         if (QOS1 == msg->qos) {
             /* expect to receive PUBACK, otherwise data will be resent */
@@ -1353,7 +1404,10 @@ exit:
 
     if ((KAWAII_MQTT_ACK_HANDLER_NUM_TOO_MUCH_ERROR == rc) || (KAWAII_MQTT_MEM_NOT_ENOUGH_ERROR == rc)) {
         KAWAII_MQTT_LOG_W("%s:%d %s()... there is not enough memory space to record...", __FILE__, __LINE__, __FUNCTION__);
-
+        
+        /*must realse the socket file descriptor zhaoshimin 20200629*/
+        network_release(c->mqtt_network);
+        
         /* record too much retransmitted data, may be disconnected, need to reconnect */
         mqtt_set_client_state(c, CLIENT_STATE_DISCONNECTED);
     }

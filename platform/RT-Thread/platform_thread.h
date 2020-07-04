@@ -11,7 +11,7 @@
 #include <rtthread.h>
 
 typedef struct platform_thread {
-    struct rt_thread thread;
+    rt_thread_t thread;
 } platform_thread_t;
 
 platform_thread_t *platform_thread_init( const char *name,
