@@ -207,7 +207,7 @@ int nettype_tls_write(network_t *n, unsigned char *buf, int len, int timeout)
     
     nettype_tls_params_t *nettype_tls_params = (nettype_tls_params_t *) n->nettype_tls_params;
 
-    platform_timer_init(&timer);
+    
     platform_timer_cutdown(&timer, timeout);
 
     do {
@@ -235,7 +235,7 @@ int nettype_tls_read(network_t *n, unsigned char *buf, int len, int timeout)
     
     nettype_tls_params_t *nettype_tls_params = (nettype_tls_params_t *) n->nettype_tls_params;
 
-    platform_timer_init(&timer);
+    
     platform_timer_cutdown(&timer, timeout);
     
     do {
