@@ -558,7 +558,7 @@ static int mqtt_try_resubscribe(mqtt_client_t* c)
     mqtt_list_t *curr, *next;
     message_handlers_t *msg_handler;
 
-    KAWAII_MQTT_LOG_W("%s:%d %s()... mqtt try resubscribe ...", __FILE__, __LINE__, __FUNCTION__);
+    KAWAII_MQTT_LOG_I("%s:%d %s()... mqtt try resubscribe ...", __FILE__, __LINE__, __FUNCTION__);
     
     if (mqtt_list_is_empty(&c->mqtt_msg_handler_list))
         RETURN_ERROR(KAWAII_MQTT_SUCCESS_ERROR);
@@ -587,8 +587,10 @@ static int mqtt_try_do_reconnect(mqtt_client_t* c)
         /* process these ack messages immediately after reconnecting */
         mqtt_ack_list_scan(c, 0);
     }
-
-    KAWAII_MQTT_LOG_D("%s:%d %s()... mqtt try connect result is -0x%04x", __FILE__, __LINE__, __FUNCTION__, -rc);
+    else
+    {
+        KAWAII_MQTT_LOG_E("%s:%d %s()... mqtt try connect result is -0x%04x", __FILE__, __LINE__, __FUNCTION__, -rc);
+    }
     
     RETURN_ERROR(rc);
 }
@@ -608,8 +610,7 @@ static int mqtt_try_reconnect(mqtt_client_t* c)
         /*connect fail must delay reconnect try duration time and let cpu time go out, the lowest priority task can run */
         mqtt_sleep_ms(c->mqtt_reconnect_try_duration);  
         RETURN_ERROR(KAWAII_MQTT_RECONNECT_TIMEOUT_ERROR);    
-    }
-    else {
+    } else {
         RETURN_ERROR(rc);    
     }
 
@@ -832,6 +833,8 @@ static int mqtt_packet_handle(mqtt_client_t* c, platform_timer_t* timer)
 
     switch (packet_type) {
         case 0: /* timed out reading packet */
+            /*when mqtt closed by server, funtion mqtt_read_pacek return no delay time, so add mqtt_sleep_ms to let cpu time zhaoshimin 20200723*/
+            mqtt_sleep_ms(100);
             break;
 
         case CONNACK: /* has been processed */
@@ -1054,6 +1057,8 @@ exit:
         c->mqtt_ping_outstanding = 0;        /* reset ping outstanding */
 
     } else {
+        /*when server ack error, it must close the mqtt socket zhaoshimin 20200724  */
+        network_release(c->mqtt_network);
         mqtt_set_client_state(c, CLIENT_STATE_INITIALIZED); /* connect failed */
     }
     
@@ -1359,7 +1364,7 @@ int mqtt_publish(mqtt_client_t* c, const char* topic_filter, mqtt_message_t* msg
 
     if (CLIENT_STATE_CONNECTED != mqtt_get_client_state(c)) {
         rc = KAWAII_MQTT_NOT_CONNECT_ERROR;
-        goto exit;
+        RETURN_ERROR(rc);
     }
 
     if ((NULL != msg->payload) && (0 == msg->payloadlen))
@@ -1402,7 +1407,8 @@ exit:
 
     platform_mutex_unlock(&c->mqtt_write_lock);
 
-    if ((KAWAII_MQTT_ACK_HANDLER_NUM_TOO_MUCH_ERROR == rc) || (KAWAII_MQTT_MEM_NOT_ENOUGH_ERROR == rc)) {
+    if ((KAWAII_MQTT_ACK_HANDLER_NUM_TOO_MUCH_ERROR == rc) || (KAWAII_MQTT_MEM_NOT_ENOUGH_ERROR == rc) ||
+        (KAWAII_MQTT_SEND_PACKET_ERROR  == rc)) {
         KAWAII_MQTT_LOG_W("%s:%d %s()... there is not enough memory space to record...", __FILE__, __LINE__, __FUNCTION__);
         
         /*must realse the socket file descriptor zhaoshimin 20200629*/
