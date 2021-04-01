@@ -33,8 +33,8 @@ static int mqtt_publish_handle1(mqtt_client_t *client)
     return mqtt_publish(client, "rtt-topic", &msg);
 }
 
-
-int main(void)
+static char cid[64] = { 0 };
+static void kawaii_mqtt_demo(void *parameter)
 {
     mqtt_client_t *client = NULL;
     
@@ -44,12 +44,16 @@ int main(void)
 
     client = mqtt_lease();
 
-    mqtt_set_host(client, "www.jiejie01.top");
+    rt_snprintf(cid, sizeof(cid), "rtthread%d", rt_tick_get());
+
+    mqtt_set_host(client, "jiejie01.top");
     mqtt_set_port(client, "1883");
     mqtt_set_user_name(client, "rt-thread");
     mqtt_set_password(client, "rt-thread");
-    mqtt_set_client_id(client, "rt-thread");
+    mqtt_set_client_id(client, cid);
     mqtt_set_clean_session(client, 1);
+
+    KAWAII_MQTT_LOG_I("The ID of the Kawaii client is: %s ",cid);
 
     mqtt_connect(client);
     
@@ -61,3 +65,18 @@ int main(void)
         mqtt_sleep_ms(4 * 1000);
     }
 }
+
+int ka_mqtt(void)
+{
+    rt_thread_t tid_mqtt;
+
+    tid_mqtt = rt_thread_create("kawaii_demo", kawaii_mqtt_demo, RT_NULL, 2048, 17, 10);
+    if (tid_mqtt == RT_NULL) {
+        return -RT_ERROR;
+    }
+
+    rt_thread_startup(tid_mqtt);
+
+    return RT_EOK;
+}
+MSH_CMD_EXPORT(ka_mqtt, Kawaii MQTT client test program);
