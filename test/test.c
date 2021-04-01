@@ -30,7 +30,7 @@ static int mqtt_publish_handle1(mqtt_client_t *client)
     msg.qos = QOS0;
     msg.payload = (void *)"this is a kawaii mqtt test ...";
 
-    return mqtt_publish(client, "rtt-topic", &msg);
+    return mqtt_publish(client, "rtt-pub", &msg);
 }
 
 static char cid[64] = { 0 };
@@ -57,7 +57,7 @@ static void kawaii_mqtt_demo(void *parameter)
 
     mqtt_connect(client);
     
-    mqtt_subscribe(client, "rtt-topic", QOS0, sub_topic_handle1);
+    mqtt_subscribe(client, "rtt-sub", QOS0, sub_topic_handle1);
     
     while (1) {
         mqtt_publish_handle1(client);
