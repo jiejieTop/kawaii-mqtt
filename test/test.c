@@ -34,7 +34,7 @@ static int mqtt_publish_handle1(mqtt_client_t *client)
 }
 
 
-int main(void)
+int main_mqtt(void)
 {
     mqtt_client_t *client = NULL;
     

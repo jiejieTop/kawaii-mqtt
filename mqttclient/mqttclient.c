@@ -491,11 +491,18 @@ static void mqtt_clean_session(mqtt_client_t* c)
     ack_handlers_t *ack_handler;
     message_handlers_t *msg_handler;
     
+    platform_mutex_lock(&c->mqtt_write_lock);
     /* release all ack_handler_list memory */
     if (!(mqtt_list_is_empty(&c->mqtt_ack_handler_list))) {
         LIST_FOR_EACH_SAFE(curr, next, &c->mqtt_ack_handler_list) {
             ack_handler = LIST_ENTRY(curr, ack_handlers_t, list);
+            if(ack_handler->handler)
+            {
+                platform_memory_free(ack_handler->handler);  
+                ack_handler->handler = RT_NULL;      
+            }
             platform_memory_free(ack_handler);
+            mqtt_subtract_ack_handler_num(c);
         }
         mqtt_list_del_init(&c->mqtt_ack_handler_list);
     }
@@ -509,6 +516,7 @@ static void mqtt_clean_session(mqtt_client_t* c)
         }
         mqtt_list_del_init(&c->mqtt_msg_handler_list);
     }
+    platform_mutex_unlock(&c->mqtt_write_lock);
 
     mqtt_set_client_state(c, CLIENT_STATE_INVALID);
 }
@@ -611,6 +619,13 @@ static int mqtt_try_reconnect(mqtt_client_t* c)
         mqtt_sleep_ms(c->mqtt_reconnect_try_duration);  
         RETURN_ERROR(KAWAII_MQTT_RECONNECT_TIMEOUT_ERROR);    
     } else {
+
+        /* when connect server success, call the connect success callback function*/
+        if(c->mqtt_connect_handler)
+        {
+            c->mqtt_connect_handler(c, c->mqtt_connect_data);
+        }
+        
         RETURN_ERROR(rc);    
     }
 
@@ -1327,7 +1342,10 @@ int mqtt_subscribe(mqtt_client_t* c, const char* topic_filter, mqtt_qos_t qos, m
     }    
 
     rc = mqtt_ack_list_record(c, SUBACK, packet_id, len, msg_handler);
-
+    if(KAWAII_MQTT_SUCCESS_ERROR != rc)
+    {
+        platform_memory_free(msg_handler);    
+    }
 exit:
 
     platform_mutex_unlock(&c->mqtt_write_lock);

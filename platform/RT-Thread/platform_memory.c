@@ -10,9 +10,12 @@
 
 void *platform_memory_alloc(size_t size)
 {
-    char *ptr;
+    char *ptr = RT_NULL;
     ptr = rt_malloc(size);
-    memset(ptr, 0, size);
+    if(ptr)
+    {
+        memset(ptr, 0, size);
+    }
     return (void *)ptr;
 }
 
