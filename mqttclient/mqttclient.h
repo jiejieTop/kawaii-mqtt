@@ -61,6 +61,7 @@ typedef struct message_data {
 typedef void (*interceptor_handler_t)(void* client, message_data_t* msg);
 typedef void (*message_handler_t)(void* client, message_data_t* msg);
 typedef void (*reconnect_handler_t)(void* client, void* reconnect_date);
+typedef void (*connect_handler_t)(void* client, void* connect_date);
 
 typedef struct message_handlers {
     mqtt_list_t         list;
@@ -94,6 +95,7 @@ typedef struct mqtt_client {
     char                        *mqtt_port;
     char                        *mqtt_ca;
     void                        *mqtt_reconnect_data;
+    void                        *mqtt_connect_data;
     uint8_t                     *mqtt_read_buf;
     uint8_t                     *mqtt_write_buf;
     uint16_t                    mqtt_keep_alive_interval;
@@ -122,6 +124,7 @@ typedef struct mqtt_client {
     platform_timer_t            mqtt_last_received;
     reconnect_handler_t         mqtt_reconnect_handler;
     interceptor_handler_t       mqtt_interceptor_handler;
+    connect_handler_t           mqtt_connect_handler;
 } mqtt_client_t;
 
 
@@ -156,6 +159,8 @@ KAWAII_MQTT_CLIENT_SET_STATEMENT(write_buf_size, uint32_t)
 KAWAII_MQTT_CLIENT_SET_STATEMENT(reconnect_try_duration, uint32_t)
 KAWAII_MQTT_CLIENT_SET_STATEMENT(reconnect_handler, reconnect_handler_t)
 KAWAII_MQTT_CLIENT_SET_STATEMENT(interceptor_handler, interceptor_handler_t)
+KAWAII_MQTT_CLIENT_SET_STATEMENT(connect_data, void*)
+KAWAII_MQTT_CLIENT_SET_STATEMENT(connect_handler, connect_handler_t)
 
 void mqtt_sleep_ms(int ms);
 mqtt_client_t *mqtt_lease(void);

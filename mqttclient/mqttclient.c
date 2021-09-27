@@ -942,7 +942,7 @@ static int mqtt_yield(mqtt_client_t* c, int timeout_ms)
 
 static void mqtt_yield_thread(void *arg)
 {
-    int rc;
+    int rc = 0;
     
     mqtt_client_t *c = (mqtt_client_t *)arg;
 
@@ -950,7 +950,7 @@ static void mqtt_yield_thread(void *arg)
     while (1) {
         rc = mqtt_yield(c, c->mqtt_cmd_timeout);
         if (KAWAII_MQTT_CLEAN_SESSION_ERROR == rc) {
-            KAWAII_MQTT_LOG_E("%s:%d %s()..., mqtt clean session....", __FILE__, __LINE__, __FUNCTION__);
+            KAWAII_MQTT_LOG_W("%s:%d %s()..., mqtt clean session....", __FILE__, __LINE__, __FUNCTION__);
             network_disconnect(c->mqtt_network);
             mqtt_clean_session(c);
             break;
@@ -960,6 +960,7 @@ static void mqtt_yield_thread(void *arg)
     }
     /*let the rtos recycles thread resources zhaoshimin 20200629*/
     platform_thread_destroy(c->mqtt_thread);
+    c->mqtt_thread = RT_NULL;
    
 }
 
@@ -969,14 +970,23 @@ static int mqtt_connect_with_results(mqtt_client_t* c)
     int rc = KAWAII_MQTT_CONNECT_FAILED_ERROR;
     platform_timer_t connect_timer;
     mqtt_connack_data_t connack_data = {0};
+    client_state_t state;
     MQTTPacket_connectData connect_data = MQTTPacket_connectData_initializer;
 
     if (NULL == c)
+    {
         RETURN_ERROR(KAWAII_MQTT_NULL_VALUE_ERROR);
+    }
 
-    if (CLIENT_STATE_CONNECTED == mqtt_get_client_state(c))
+    state = mqtt_get_client_state(c);
+    if (CLIENT_STATE_CONNECTED == state)
+    {
         RETURN_ERROR(KAWAII_MQTT_SUCCESS_ERROR);
-
+    }    
+    if(CLIENT_STATE_CLEAN_SESSION == state)
+    {
+        RETURN_ERROR(KAWAII_MQTT_CLEAN_SESSION_ERROR);
+    }
 
 #ifdef KAWAII_MQTT_NETWORK_TYPE_TLS
     rc = network_init(c->mqtt_network, c->mqtt_host, c->mqtt_port, c->mqtt_ca);
@@ -991,7 +1001,6 @@ static int mqtt_connect_with_results(mqtt_client_t* c)
         RETURN_ERROR(rc); 
     }
     
-    KAWAII_MQTT_LOG_I("%s:%d %s()... mqtt connect success...", __FILE__, __LINE__, __FUNCTION__);
 
     connect_data.keepAliveInterval = c->mqtt_keep_alive_interval;
     connect_data.cleansession = c->mqtt_clean_session;
@@ -1056,6 +1065,12 @@ exit:
 
         c->mqtt_ping_outstanding = 0;        /* reset ping outstanding */
 
+        /* call the connect success callback function*/
+        if((rc == KAWAII_MQTT_SUCCESS_ERROR) && (c->mqtt_connect_handler))
+        {
+            c->mqtt_connect_handler(c, c->mqtt_connect_data);
+        }
+
     } else {
         /*when server ack error, it must close the mqtt socket zhaoshimin 20200724  */
         network_release(c->mqtt_network);
@@ -1077,6 +1092,7 @@ static int mqtt_init(mqtt_client_t* c)
         RETURN_ERROR(KAWAII_MQTT_MEM_NOT_ENOUGH_ERROR);
     }
     memset(c->mqtt_network, 0, sizeof(network_t));
+    c->mqtt_network->socket = -1;
 
     c->mqtt_packet_id = 1;
     c->mqtt_clean_session = 0;          //no clear session by default
@@ -1097,6 +1113,8 @@ static int mqtt_init(mqtt_client_t* c)
     c->mqtt_reconnect_data = NULL;
     c->mqtt_reconnect_handler = NULL;
     c->mqtt_interceptor_handler = NULL;
+    c->mqtt_connect_data = NULL;
+    c->mqtt_connect_handler = NULL;
 
     /*only malloc write buf and read buf when call mqtt_init function */
     if ((KAWAII_MQTT_MIN_PAYLOAD_SIZE >= c->mqtt_read_buf_size) || (KAWAII_MQTT_MAX_PAYLOAD_SIZE <= c->mqtt_read_buf_size))
@@ -1144,6 +1162,8 @@ KAWAII_MQTT_CLIENT_SET_DEFINE(write_buf_size, uint32_t, 0)
 KAWAII_MQTT_CLIENT_SET_DEFINE(reconnect_try_duration, uint32_t, 0)
 KAWAII_MQTT_CLIENT_SET_DEFINE(reconnect_handler, reconnect_handler_t, NULL)
 KAWAII_MQTT_CLIENT_SET_DEFINE(interceptor_handler, interceptor_handler_t, NULL)
+KAWAII_MQTT_CLIENT_SET_DEFINE(connect_handler, connect_handler_t, NULL)
+KAWAII_MQTT_CLIENT_SET_DEFINE(connect_data, void*, NULL)
 
 void mqtt_sleep_ms(int ms)
 {
