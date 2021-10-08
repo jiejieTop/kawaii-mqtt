@@ -1292,6 +1292,11 @@ int mqtt_disconnect(mqtt_client_t* c)
     
     platform_timer_cutdown(&timer, c->mqtt_cmd_timeout);
 
+    if (CLIENT_STATE_CONNECTED != mqtt_get_client_state(c))
+    {
+        return KAWAII_MQTT_SUCCESS_ERROR;
+    }
+
     platform_mutex_lock(&c->mqtt_write_lock);
 
     /* serialize disconnect packet and send it */
