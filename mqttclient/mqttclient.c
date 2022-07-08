@@ -24,7 +24,22 @@ static client_state_t mqtt_get_client_state(mqtt_client_t* c)
 static void mqtt_set_client_state(mqtt_client_t* c, client_state_t state)
 {
     platform_mutex_lock(&c->mqtt_global_lock);
-    c->mqtt_client_state = state;
+    if(c->mqtt_client_state == CLIENT_STATE_CLEAN_SESSION)
+    {
+        /*CLIENT_STATE_CLEAN_SESSION can only change to CLIENT_STATE_INVALID zhaoshimin 20220620*/
+        if(state == CLIENT_STATE_INVALID)
+        {
+            c->mqtt_client_state = CLIENT_STATE_INVALID;
+        }
+        else
+        {
+            /*no change the c->mqtt_client_state*/
+        }
+    }
+    else
+    {
+        c->mqtt_client_state = state;
+    }    
     platform_mutex_unlock(&c->mqtt_global_lock);
 }
 
@@ -531,6 +546,7 @@ static void mqtt_ack_list_scan(mqtt_client_t* c, uint8_t flag)
 {
     mqtt_list_t *curr, *next;
     ack_handlers_t *ack_handler;
+    message_handlers_t *msg_handler;
 
     if ((mqtt_list_is_empty(&c->mqtt_ack_handler_list)) || (CLIENT_STATE_CONNECTED != mqtt_get_client_state(c)))
         return;
@@ -551,8 +567,14 @@ static void mqtt_ack_list_scan(mqtt_client_t* c, uint8_t flag)
 
         if(flag)
         {
-            /*when flag == 0, rconnet the broker, resubscribe creat the type SUBACK ack_handler_list, it not been destroyed zhaoshimin 20200629*/
+            /*when flag == 0, reconncet the broker, resubscribe creat the type SUBACK ack_handler_list, it not been destroyed zhaoshimin 20200629*/
             platform_mutex_lock(&c->mqtt_write_lock);
+            msg_handler = ack_handler->handler;
+            if(msg_handler)
+            {
+                mqtt_msg_handler_destory(msg_handler);
+                msg_handler = RT_NULL;    
+            }
             mqtt_ack_handler_destroy(ack_handler);
             mqtt_subtract_ack_handler_num(c);
             platform_mutex_unlock(&c->mqtt_write_lock);
@@ -998,10 +1020,12 @@ static int mqtt_connect_with_results(mqtt_client_t* c)
     {
         RETURN_ERROR(KAWAII_MQTT_SUCCESS_ERROR);
     }    
-    if(CLIENT_STATE_CLEAN_SESSION == state)
+    else if(CLIENT_STATE_CLEAN_SESSION == state)
     {
         RETURN_ERROR(KAWAII_MQTT_CLEAN_SESSION_ERROR);
     }
+    /*protect the socket zhaoshimin 20220622 */
+    platform_mutex_lock(&c->mqtt_write_lock);
 
 #ifdef KAWAII_MQTT_NETWORK_TYPE_TLS
     rc = network_init(c->mqtt_network, c->mqtt_host, c->mqtt_port, c->mqtt_ca);
@@ -1013,6 +1037,7 @@ static int mqtt_connect_with_results(mqtt_client_t* c)
     if (KAWAII_MQTT_SUCCESS_ERROR != rc) {
         /*when connect faile, you should call network_release to release socket file descriptor zhaoshimin 20200629*/
         network_release(c->mqtt_network);
+        platform_mutex_unlock(&c->mqtt_write_lock);
         RETURN_ERROR(rc); 
     }
     
@@ -1034,8 +1059,6 @@ static int mqtt_connect_with_results(mqtt_client_t* c)
     
     platform_timer_cutdown(&c->mqtt_last_received, (c->mqtt_keep_alive_interval * 1000));
 
-    platform_mutex_lock(&c->mqtt_write_lock);
-
     /* serialize connect packet */
     if ((len = MQTTSerialize_connect(c->mqtt_write_buf, c->mqtt_write_buf_size, &connect_data)) <= 0)
         goto exit;
@@ -1052,8 +1075,9 @@ static int mqtt_connect_with_results(mqtt_client_t* c)
             rc = connack_data.rc;
         else
             rc = KAWAII_MQTT_CONNECT_FAILED_ERROR;
-    } else
+    } else {
         rc = KAWAII_MQTT_CONNECT_FAILED_ERROR;
+    }    
 
 exit:
     if (rc == KAWAII_MQTT_SUCCESS_ERROR) {
@@ -1294,7 +1318,16 @@ int mqtt_disconnect(mqtt_client_t* c)
 
     if (CLIENT_STATE_CONNECTED != mqtt_get_client_state(c))
     {
-        return KAWAII_MQTT_SUCCESS_ERROR;
+        /*在未连接，并且mqtt线程还在运行的情况下才执行 */
+        if(c->mqtt_thread)
+        {
+            mqtt_set_client_state(c, CLIENT_STATE_CLEAN_SESSION);
+            return KAWAII_MQTT_FAILED_ERROR;
+        }
+        else
+        {
+            return KAWAII_MQTT_SUCCESS_ERROR;
+        }    
     }
 
     platform_mutex_lock(&c->mqtt_write_lock);
@@ -1389,7 +1422,10 @@ int mqtt_unsubscribe(mqtt_client_t* c, const char* topic_filter)
     }    
 
     rc = mqtt_ack_list_record(c, UNSUBACK, packet_id, len, msg_handler);
-
+    if(KAWAII_MQTT_SUCCESS_ERROR != rc)
+    {
+        platform_memory_free(msg_handler);    
+    }
 exit:
 
     platform_mutex_unlock(&c->mqtt_write_lock);
@@ -1467,7 +1503,6 @@ exit:
 
 int mqtt_list_subscribe_topic(mqtt_client_t* c)
 {
-    int i = 0;
     mqtt_list_t *curr, *next;
     message_handlers_t *msg_handler;
     
