@@ -15,6 +15,7 @@
 
 #include <sys/socket.h>
 #include <sys/time.h>
+#include <sys/ioctl.h>
 #include <sal_socket.h>
 #include <netdb.h>
 #include <sal_netdb.h>
