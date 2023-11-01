@@ -157,8 +157,18 @@ static int mqtt_read_packet(mqtt_client_t* c, int* packet_type, platform_timer_t
 
     /* 1. read the header byte.  This has the packet type in it */
     rc = network_read(c->mqtt_network, c->mqtt_read_buf, len, platform_timer_remain(timer));
-    if (rc != len)
+
+    if (rc == 0)
+    {
+        /* Socket closed by MQTT broker when network_read() == 0 */
+        network_release(c->mqtt_network);
+        mqtt_set_client_state(c, CLIENT_STATE_DISCONNECTED);
+        RETURN_ERROR(KAWAII_MQTT_NOT_CONNECT_ERROR);
+    }
+    else if (rc != len)
+    {
         RETURN_ERROR(KAWAII_MQTT_NOTHING_TO_READ_ERROR);
+    }
 
     /* 2. read the remaining length.  This is variable in itself */
     mqtt_decode_packet(c, &remain_len, platform_timer_remain(timer));
@@ -831,9 +841,6 @@ static int mqtt_packet_handle(mqtt_client_t* c, platform_timer_t* timer)
     rc = mqtt_read_packet(c, &packet_type, timer);
 
     switch (packet_type) {
-        case 0: /* timed out reading packet */
-            break;
-
         case CONNACK: /* has been processed */
             goto exit;
 
@@ -1054,6 +1061,8 @@ exit:
         c->mqtt_ping_outstanding = 0;        /* reset ping outstanding */
 
     } else {
+        /*when server ack error, it must close the mqtt socket zhaoshimin 20200724  */
+        network_release(c->mqtt_network);
         mqtt_set_client_state(c, CLIENT_STATE_INITIALIZED); /* connect failed */
     }
     
@@ -1402,7 +1411,8 @@ exit:
 
     platform_mutex_unlock(&c->mqtt_write_lock);
 
-    if ((KAWAII_MQTT_ACK_HANDLER_NUM_TOO_MUCH_ERROR == rc) || (KAWAII_MQTT_MEM_NOT_ENOUGH_ERROR == rc)) {
+    if ((KAWAII_MQTT_ACK_HANDLER_NUM_TOO_MUCH_ERROR == rc) || (KAWAII_MQTT_MEM_NOT_ENOUGH_ERROR == rc) ||
+        (KAWAII_MQTT_SEND_PACKET_ERROR  == rc)) {
         KAWAII_MQTT_LOG_W("%s:%d %s()... there is not enough memory space to record...", __FILE__, __LINE__, __FUNCTION__);
         
         /*must realse the socket file descriptor zhaoshimin 20200629*/
